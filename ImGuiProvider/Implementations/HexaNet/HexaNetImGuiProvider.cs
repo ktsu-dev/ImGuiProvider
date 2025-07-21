@@ -417,7 +417,7 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 		ImGui.TreeNodeEx(strId, (ImGuiTreeNodeFlags)flags, fmt);
 
 	/// <inheritdoc />
-	public bool TreeNodeExtended(void* ptrId, int flags, string fmt) =>
+	public unsafe bool TreeNodeExtended(void* ptrId, int flags, string fmt) =>
 		ImGui.TreeNodeEx(ptrId, (ImGuiTreeNodeFlags)flags, fmt);
 
 	/// <inheritdoc />
@@ -454,10 +454,10 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 
 	// Plot/Graph widgets (simple versions)
 	/// <inheritdoc />
-	public void PlotLines(string label, float* values, int valuesCount, int valuesOffset = 0, string? overlayText = null, float scaleMin = float.MaxValue, float scaleMax = float.MaxValue, Vector2 graphSize = default, int stride = sizeof(float)) => ImGui.PlotLines(label, values, valuesCount, valuesOffset, overlayText, scaleMin, scaleMax, graphSize, stride);
+	public unsafe void PlotLines(string label, float* values, int valuesCount, int valuesOffset = 0, string? overlayText = null, float scaleMin = float.MaxValue, float scaleMax = float.MaxValue, Vector2 graphSize = default, int stride = sizeof(float)) => ImGui.PlotLines(label, values, valuesCount, valuesOffset, overlayText, scaleMin, scaleMax, graphSize, stride);
 
 	/// <inheritdoc />
-	public void PlotHistogram(string label, float* values, int valuesCount, int valuesOffset = 0, string? overlayText = null, float scaleMin = float.MaxValue, float scaleMax = float.MaxValue, Vector2 graphSize = default, int stride = sizeof(float)) => ImGui.PlotHistogram(label, values, valuesCount, valuesOffset, overlayText, scaleMin, scaleMax, graphSize, stride);
+	public unsafe void PlotHistogram(string label, float* values, int valuesCount, int valuesOffset = 0, string? overlayText = null, float scaleMin = float.MaxValue, float scaleMax = float.MaxValue, Vector2 graphSize = default, int stride = sizeof(float)) => ImGui.PlotHistogram(label, values, valuesCount, valuesOffset, overlayText, scaleMin, scaleMax, graphSize, stride);
 
 	// Menus
 	/// <inheritdoc />
@@ -524,6 +524,180 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 
 	/// <inheritdoc />
 	public bool IsPopupOpen(string strId, int flags = 0) => ImGui.IsPopupOpen(strId, (ImGuiPopupFlags)flags);
+
+	// Drawing API Implementation
+	/// <inheritdoc />
+	public void DrawLine(nint drawList, Vector2 p1, Vector2 p2, uint col, float thickness = 1.0f)
+	{
+		ImDrawListPtr list = new((ImDrawList*)drawList);
+		list.AddLine(p1, p2, col, thickness);
+	}
+
+	/// <inheritdoc />
+	public void DrawRect(nint drawList, Vector2 pMin, Vector2 pMax, uint col, float rounding = 0.0f, int flags = 0, float thickness = 1.0f)
+	{
+		ImDrawListPtr list = new((ImDrawList*)drawList);
+		list.AddRect(pMin, pMax, col, rounding, (ImDrawFlags)flags, thickness);
+	}
+
+	/// <inheritdoc />
+	public void DrawRectFilled(nint drawList, Vector2 pMin, Vector2 pMax, uint col, float rounding = 0.0f, int flags = 0)
+	{
+		ImDrawListPtr list = new((ImDrawList*)drawList);
+		list.AddRectFilled(pMin, pMax, col, rounding, (ImDrawFlags)flags);
+	}
+
+	/// <inheritdoc />
+	public void DrawCircle(nint drawList, Vector2 center, float radius, uint col, int numSegments = 0, float thickness = 1.0f)
+	{
+		ImDrawListPtr list = new((ImDrawList*)drawList);
+		list.AddCircle(center, radius, col, numSegments, thickness);
+	}
+
+	/// <inheritdoc />
+	public void DrawCircleFilled(nint drawList, Vector2 center, float radius, uint col, int numSegments = 0)
+	{
+		ImDrawListPtr list = new((ImDrawList*)drawList);
+		list.AddCircleFilled(center, radius, col, numSegments);
+	}
+
+	/// <inheritdoc />
+	public void DrawTriangle(nint drawList, Vector2 p1, Vector2 p2, Vector2 p3, uint col, float thickness = 1.0f)
+	{
+		ImDrawListPtr list = new((ImDrawList*)drawList);
+		list.AddTriangle(p1, p2, p3, col, thickness);
+	}
+
+	/// <inheritdoc />
+	public void DrawTriangleFilled(nint drawList, Vector2 p1, Vector2 p2, Vector2 p3, uint col)
+	{
+		ImDrawListPtr list = new((ImDrawList*)drawList);
+		list.AddTriangleFilled(p1, p2, p3, col);
+	}
+
+	/// <inheritdoc />
+	public void DrawText(nint drawList, Vector2 pos, uint col, string text)
+	{
+		ImDrawListPtr list = new((ImDrawList*)drawList);
+		list.AddText(pos, col, text);
+	}
+
+	/// <inheritdoc />
+	public unsafe void DrawTextWithFont(nint drawList, nint font, float fontSize, Vector2 pos, uint col, string text, float wrapWidth = 0.0f, Vector4* cpuFineClipRect = null)
+	{
+		ImDrawListPtr list = new((ImDrawList*)drawList);
+		ImFontPtr fontPtr = new((ImFont*)font);
+		list.AddText(fontPtr, fontSize, pos, col, text, (byte*)null, wrapWidth, cpuFineClipRect);
+	}
+
+	// Font Management Implementation
+	/// <inheritdoc />
+	public nint GetDefaultFont()
+	{
+		ImFontPtr font = ImGui.GetFont();
+		return (nint)font.Handle;
+	}
+
+	/// <inheritdoc />
+	public nint GetFontAtlas()
+	{
+		ImFontAtlasPtr atlas = ImGui.GetIO().Fonts;
+		return (nint)atlas.Handle;
+	}
+
+	/// <inheritdoc />
+	public unsafe nint AddFontFromFileTTF(string filename, float sizePixels, nint fontCfg = 0, ushort* glyphRanges = null)
+	{
+		ImFontAtlasPtr atlas = ImGui.GetIO().Fonts;
+		ImFontConfigPtr config = fontCfg != 0 ? new((ImFontConfig*)fontCfg) : new();
+		ImFontPtr font = atlas.AddFontFromFileTTF(filename, sizePixels, config, (uint*)glyphRanges);
+		return (nint)font.Handle;
+	}
+
+	/// <inheritdoc />
+	public unsafe nint AddFontFromMemoryTTF(byte* fontData, int fontDataSize, float sizePixels, nint fontCfg = 0, ushort* glyphRanges = null)
+	{
+		ImFontAtlasPtr atlas = ImGui.GetIO().Fonts;
+		ImFontConfigPtr config = fontCfg != 0 ? new((ImFontConfig*)fontCfg) : new();
+		ImFontPtr font = atlas.AddFontFromMemoryTTF(fontData, fontDataSize, sizePixels, config, (uint*)glyphRanges);
+		return (nint)font.Handle;
+	}
+
+	/// <inheritdoc />
+	public nint AddFontDefault(nint fontCfg = 0)
+	{
+		ImFontAtlasPtr atlas = ImGui.GetIO().Fonts;
+		ImFontConfigPtr config = fontCfg != 0 ? new((ImFontConfig*)fontCfg) : new();
+		ImFontPtr font = atlas.AddFontDefault(config);
+		return (nint)font.Handle;
+	}
+
+	/// <inheritdoc />
+	public bool BuildFontAtlas()
+	{
+		ImFontAtlasPtr atlas = ImGui.GetIO().Fonts;
+		// Build is handled internally, return true for success
+		return true;
+	}
+
+	/// <inheritdoc />
+	public void PushFont(nint font)
+	{
+		ImFontPtr fontPtr = new((ImFont*)font);
+		ImGui.PushFont(fontPtr, 0.0f); // Use 0 for automatic font scaling
+	}
+
+	/// <inheritdoc />
+	public void PopFont() => ImGui.PopFont();
+
+	// Legacy Columns API Implementation
+	/// <inheritdoc />
+	public void Columns(string strId, int count, int flags = 0) =>
+		ImGui.Columns(count, strId, flags != 0);
+
+	/// <inheritdoc />
+	public void Columns(int count = 1, string? id = null, bool borders = true) =>
+		ImGui.Columns(count, id, borders);
+
+	/// <inheritdoc />
+	public void NextColumn() => ImGui.NextColumn();
+
+	/// <inheritdoc />
+	public int GetColumnIndex() => ImGui.GetColumnIndex();
+
+	/// <inheritdoc />
+	public float GetColumnWidth(int columnIndex = -1) => ImGui.GetColumnWidth(columnIndex);
+
+	/// <inheritdoc />
+	public void SetColumnWidth(int columnIndex, float width) => ImGui.SetColumnWidth(columnIndex, width);
+
+	/// <inheritdoc />
+	public float GetColumnOffset(int columnIndex = -1) => ImGui.GetColumnOffset(columnIndex);
+
+	/// <inheritdoc />
+	public void SetColumnOffset(int columnIndex, float offsetX) => ImGui.SetColumnOffset(columnIndex, offsetX);
+
+	/// <inheritdoc />
+	public int GetColumnsCount() => ImGui.GetColumnsCount();
+
+	// Focus and Navigation Implementation (excluding duplicates)
+	/// <inheritdoc />
+	public void SetKeyboardFocusHere(int offset = 0) => ImGui.SetKeyboardFocusHere(offset);
+
+	/// <inheritdoc />
+	public void SetItemDefaultFocus() => ImGui.SetItemDefaultFocus();
+
+	/// <inheritdoc />
+	public bool IsWindowFocused(int flags = 0) => ImGui.IsWindowFocused((ImGuiFocusedFlags)flags);
+
+	/// <inheritdoc />
+	public void SetWindowFocus() => ImGui.SetWindowFocus();
+
+	/// <inheritdoc />
+	public void SetWindowFocus(string name) => ImGui.SetWindowFocus(name);
+
+	/// <inheritdoc />
+	public void SetNextWindowFocus() => ImGui.SetNextWindowFocus();
 
 	// Tables
 	/// <inheritdoc />

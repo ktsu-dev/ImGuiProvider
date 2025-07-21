@@ -1949,4 +1949,261 @@ public interface IImGuiProvider : IDisposable
 	/// <param name="fmt">Format string</param>
 	/// <returns>True if tree node is open</returns>
 	public unsafe bool TreeNodeExtended(void* ptrId, int flags, string fmt);
+
+	// Drawing API - Low-level drawing commands
+	// These methods work with ImDrawList to provide custom rendering
+
+	/// <summary>
+	/// Draw a line between two points
+	/// </summary>
+	/// <param name="drawList">Draw list pointer</param>
+	/// <param name="p1">Start point</param>
+	/// <param name="p2">End point</param>
+	/// <param name="col">Color (RGBA packed as uint)</param>
+	/// <param name="thickness">Line thickness</param>
+	public void DrawLine(nint drawList, Vector2 p1, Vector2 p2, uint col, float thickness = 1.0f);
+
+	/// <summary>
+	/// Draw a rectangle outline
+	/// </summary>
+	/// <param name="drawList">Draw list pointer</param>
+	/// <param name="pMin">Top-left corner</param>
+	/// <param name="pMax">Bottom-right corner</param>
+	/// <param name="col">Color (RGBA packed as uint)</param>
+	/// <param name="rounding">Corner rounding</param>
+	/// <param name="flags">Draw flags</param>
+	/// <param name="thickness">Line thickness</param>
+	public void DrawRect(nint drawList, Vector2 pMin, Vector2 pMax, uint col, float rounding = 0.0f, int flags = 0, float thickness = 1.0f);
+
+	/// <summary>
+	/// Draw a filled rectangle
+	/// </summary>
+	/// <param name="drawList">Draw list pointer</param>
+	/// <param name="pMin">Top-left corner</param>
+	/// <param name="pMax">Bottom-right corner</param>
+	/// <param name="col">Color (RGBA packed as uint)</param>
+	/// <param name="rounding">Corner rounding</param>
+	/// <param name="flags">Draw flags</param>
+	public void DrawRectFilled(nint drawList, Vector2 pMin, Vector2 pMax, uint col, float rounding = 0.0f, int flags = 0);
+
+	/// <summary>
+	/// Draw a circle outline
+	/// </summary>
+	/// <param name="drawList">Draw list pointer</param>
+	/// <param name="center">Circle center</param>
+	/// <param name="radius">Circle radius</param>
+	/// <param name="col">Color (RGBA packed as uint)</param>
+	/// <param name="numSegments">Number of segments (0 = auto)</param>
+	/// <param name="thickness">Line thickness</param>
+	public void DrawCircle(nint drawList, Vector2 center, float radius, uint col, int numSegments = 0, float thickness = 1.0f);
+
+	/// <summary>
+	/// Draw a filled circle
+	/// </summary>
+	/// <param name="drawList">Draw list pointer</param>
+	/// <param name="center">Circle center</param>
+	/// <param name="radius">Circle radius</param>
+	/// <param name="col">Color (RGBA packed as uint)</param>
+	/// <param name="numSegments">Number of segments (0 = auto)</param>
+	public void DrawCircleFilled(nint drawList, Vector2 center, float radius, uint col, int numSegments = 0);
+
+	/// <summary>
+	/// Draw a triangle outline
+	/// </summary>
+	/// <param name="drawList">Draw list pointer</param>
+	/// <param name="p1">First vertex</param>
+	/// <param name="p2">Second vertex</param>
+	/// <param name="p3">Third vertex</param>
+	/// <param name="col">Color (RGBA packed as uint)</param>
+	/// <param name="thickness">Line thickness</param>
+	public void DrawTriangle(nint drawList, Vector2 p1, Vector2 p2, Vector2 p3, uint col, float thickness = 1.0f);
+
+	/// <summary>
+	/// Draw a filled triangle
+	/// </summary>
+	/// <param name="drawList">Draw list pointer</param>
+	/// <param name="p1">First vertex</param>
+	/// <param name="p2">Second vertex</param>
+	/// <param name="p3">Third vertex</param>
+	/// <param name="col">Color (RGBA packed as uint)</param>
+	public void DrawTriangleFilled(nint drawList, Vector2 p1, Vector2 p2, Vector2 p3, uint col);
+
+	/// <summary>
+	/// Draw text
+	/// </summary>
+	/// <param name="drawList">Draw list pointer</param>
+	/// <param name="pos">Text position</param>
+	/// <param name="col">Color (RGBA packed as uint)</param>
+	/// <param name="text">Text to draw</param>
+	public void DrawText(nint drawList, Vector2 pos, uint col, string text);
+
+	/// <summary>
+	/// Draw text with custom font
+	/// </summary>
+	/// <param name="drawList">Draw list pointer</param>
+	/// <param name="font">Font pointer</param>
+	/// <param name="fontSize">Font size</param>
+	/// <param name="pos">Text position</param>
+	/// <param name="col">Color (RGBA packed as uint)</param>
+	/// <param name="text">Text to draw</param>
+	/// <param name="wrapWidth">Text wrap width (0 = no wrap)</param>
+	/// <param name="cpuFineClipRect">Fine clipping rectangle</param>
+	public unsafe void DrawTextWithFont(nint drawList, nint font, float fontSize, Vector2 pos, uint col, string text, float wrapWidth = 0.0f, Vector4* cpuFineClipRect = null);
+
+	// Font Management
+	/// <summary>
+	/// Get the default font
+	/// </summary>
+	/// <returns>Default font pointer</returns>
+	public nint GetDefaultFont();
+
+	/// <summary>
+	/// Get the font atlas
+	/// </summary>
+	/// <returns>Font atlas pointer</returns>
+	public nint GetFontAtlas();
+
+	/// <summary>
+	/// Add font from file to atlas
+	/// </summary>
+	/// <param name="filename">Font file path</param>
+	/// <param name="sizePixels">Font size in pixels</param>
+	/// <param name="fontCfg">Font configuration pointer (optional)</param>
+	/// <param name="glyphRanges">Glyph ranges pointer (optional)</param>
+	/// <returns>Font pointer</returns>
+	public unsafe nint AddFontFromFileTTF(string filename, float sizePixels, nint fontCfg = 0, ushort* glyphRanges = null);
+
+	/// <summary>
+	/// Add font from memory to atlas
+	/// </summary>
+	/// <param name="fontData">Font data buffer</param>
+	/// <param name="fontDataSize">Font data size</param>
+	/// <param name="sizePixels">Font size in pixels</param>
+	/// <param name="fontCfg">Font configuration pointer (optional)</param>
+	/// <param name="glyphRanges">Glyph ranges pointer (optional)</param>
+	/// <returns>Font pointer</returns>
+	public unsafe nint AddFontFromMemoryTTF(byte* fontData, int fontDataSize, float sizePixels, nint fontCfg = 0, ushort* glyphRanges = null);
+
+	/// <summary>
+	/// Add default font to atlas
+	/// </summary>
+	/// <param name="fontCfg">Font configuration pointer (optional)</param>
+	/// <returns>Font pointer</returns>
+	public nint AddFontDefault(nint fontCfg = 0);
+
+	/// <summary>
+	/// Build font atlas
+	/// </summary>
+	/// <returns>True if successful</returns>
+	public bool BuildFontAtlas();
+
+	/// <summary>
+	/// Push font onto stack
+	/// </summary>
+	/// <param name="font">Font pointer</param>
+	public void PushFont(nint font);
+
+	/// <summary>
+	/// Pop font from stack
+	/// </summary>
+	public void PopFont();
+
+	// Legacy Columns API (older column system)
+	/// <summary>
+	/// Begin columns layout (legacy API)
+	/// </summary>
+	/// <param name="strId">String ID</param>
+	/// <param name="count">Number of columns</param>
+	/// <param name="flags">Column flags</param>
+	public void Columns(string strId, int count, int flags = 0);
+
+	/// <summary>
+	/// Begin columns layout with default parameters (legacy API)
+	/// </summary>
+	/// <param name="count">Number of columns</param>
+	/// <param name="id">Optional ID</param>
+	/// <param name="borders">Show borders</param>
+	public void Columns(int count = 1, string? id = null, bool borders = true);
+
+	/// <summary>
+	/// Move to next column (legacy API)
+	/// </summary>
+	public void NextColumn();
+
+	/// <summary>
+	/// Get current column index (legacy API)
+	/// </summary>
+	/// <returns>Current column index</returns>
+	public int GetColumnIndex();
+
+	/// <summary>
+	/// Get column width (legacy API)
+	/// </summary>
+	/// <param name="columnIndex">Column index (-1 for current)</param>
+	/// <returns>Column width</returns>
+	public float GetColumnWidth(int columnIndex = -1);
+
+	/// <summary>
+	/// Set column width (legacy API)
+	/// </summary>
+	/// <param name="columnIndex">Column index</param>
+	/// <param name="width">New width</param>
+	public void SetColumnWidth(int columnIndex, float width);
+
+	/// <summary>
+	/// Get column offset (legacy API)
+	/// </summary>
+	/// <param name="columnIndex">Column index (-1 for current)</param>
+	/// <returns>Column offset</returns>
+	public float GetColumnOffset(int columnIndex = -1);
+
+	/// <summary>
+	/// Set column offset (legacy API)
+	/// </summary>
+	/// <param name="columnIndex">Column index</param>
+	/// <param name="offsetX">New offset</param>
+	public void SetColumnOffset(int columnIndex, float offsetX);
+
+	/// <summary>
+	/// Get columns count (legacy API)
+	/// </summary>
+	/// <returns>Number of columns</returns>
+	public int GetColumnsCount();
+
+	// Focus and Navigation
+	/// <summary>
+	/// Set keyboard focus on next widget
+	/// </summary>
+	/// <param name="offset">Offset from current widget (0 = next widget)</param>
+	public void SetKeyboardFocusHere(int offset = 0);
+
+	/// <summary>
+	/// Set default focus for next widget
+	/// </summary>
+	public void SetItemDefaultFocus();
+
+	// Note: IsAnyItemFocused and IsItemFocused already exist in the interface above
+
+	/// <summary>
+	/// Check if window has focus
+	/// </summary>
+	/// <param name="flags">Focus flags</param>
+	/// <returns>True if window has focus</returns>
+	public bool IsWindowFocused(int flags = 0);
+
+	/// <summary>
+	/// Set focus to current window
+	/// </summary>
+	public void SetWindowFocus();
+
+	/// <summary>
+	/// Set focus to window by name
+	/// </summary>
+	/// <param name="name">Window name</param>
+	public void SetWindowFocus(string name);
+
+	/// <summary>
+	/// Set focus for next window
+	/// </summary>
+	public void SetNextWindowFocus();
 }
