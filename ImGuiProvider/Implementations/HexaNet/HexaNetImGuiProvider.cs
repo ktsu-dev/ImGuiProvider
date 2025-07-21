@@ -204,14 +204,63 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 
 	// Images
 	/// <inheritdoc />
-	public void Image(nint textureId, Vector2 imageSize, Vector2 uv0 = default, Vector2 uv1 = default, Vector4 tintCol = default, Vector4 borderCol = default) =>
-		// TODO: Implement proper Image method once we understand the Hexa.NET.ImGui API better
-		throw new NotImplementedException("Image method needs to be implemented with correct Hexa.NET.ImGui API usage");
+	public void Image(nint textureId, Vector2 imageSize, Vector2 uv0 = default, Vector2 uv1 = default, Vector4 tintCol = default, Vector4 borderCol = default)
+	{
+		if (uv1 == default)
+		{
+			uv1 = Vector2.One;
+		}
+
+		if (tintCol == default)
+		{
+			tintCol = Vector4.One;
+		}
+
+		// Create ImTextureRef from nint via ImTextureID
+		ImTextureRef textureRef = new(texData: null, texId: (ImTextureID)textureId);
+
+		// Use appropriate overload based on provided parameters
+		if (uv0 != default || uv1 != Vector2.One)
+		{
+			ImGui.Image(textureRef, imageSize, uv0, uv1);
+		}
+		else
+		{
+			ImGui.Image(textureRef, imageSize);
+		}
+	}
 
 	/// <inheritdoc />
-	public bool ImageButton(string strId, nint textureId, Vector2 imageSize, Vector2 uv0 = default, Vector2 uv1 = default, Vector4 bgCol = default, Vector4 tintCol = default) =>
-		// TODO: Implement proper ImageButton method once we understand the Hexa.NET.ImGui API better
-		throw new NotImplementedException("ImageButton method needs to be implemented with correct Hexa.NET.ImGui API usage");
+	public bool ImageButton(string strId, nint textureId, Vector2 imageSize, Vector2 uv0 = default, Vector2 uv1 = default, Vector4 bgCol = default, Vector4 tintCol = default)
+	{
+		if (uv1 == default)
+		{
+			uv1 = Vector2.One;
+		}
+
+		if (tintCol == default)
+		{
+			tintCol = Vector4.One;
+		}
+
+		if (bgCol == default)
+		{
+			bgCol = Vector4.Zero; // Transparent background by default
+		}
+
+		// Create ImTextureRef from nint via ImTextureID
+		ImTextureRef textureRef = new(texData: null, texId: (ImTextureID)textureId);
+
+		// Use appropriate overload based on provided parameters
+		if (uv0 != default || uv1 != Vector2.One || bgCol != Vector4.Zero || tintCol != Vector4.One)
+		{
+			return ImGui.ImageButton(strId, textureRef, imageSize, uv0, uv1, bgCol, tintCol);
+		}
+		else
+		{
+			return ImGui.ImageButton(strId, textureRef, imageSize);
+		}
+	}
 
 	// Combos
 	/// <inheritdoc />
