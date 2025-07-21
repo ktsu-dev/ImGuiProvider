@@ -1,0 +1,26 @@
+﻿<Project Sdk="ktsu.Sdk.Lib">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageId>ImGuiProvider</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>Your Name</Authors>
+    <Description>Dependency injection wrapper for ImGui libraries with Hexa.NET.ImGui implementation</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/yourusername/ImGuiProvider</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/yourusername/ImGuiProvider</RepositoryUrl>
+    <PackageTags>imgui,gui,dependency-injection,hexa-net</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Hexa.NET.ImGui" Version="2.1.7" />
+    <PackageReference Include="Hexa.NET.ImGui.Backends" Version="2.1.7" />
+    <PackageReference Include="Hexa.NET.ImGui.Backends.GLFW" Version="2.1.7" />
+  </ItemGroup>
+
+</Project>
