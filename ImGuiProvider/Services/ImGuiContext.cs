@@ -1,175 +1,181 @@
+// Copyright (c) ktsu.dev
+// All rights reserved.
+// Licensed under the MIT license.
+
+namespace ImGuiProvider.Services;
 using ImGuiProvider.Interfaces;
 
-namespace ImGuiProvider.Services
+/// <summary>
+/// Manages ImGui context lifecycle and provides high-level operations
+/// </summary>
+public class ImGuiContext(IImGuiProvider provider) : IDisposable
 {
-    /// <summary>
-    /// Manages ImGui context lifecycle and provides high-level operations
-    /// </summary>
-    public class ImGuiContext : IDisposable
-    {
-        private readonly IImGuiProvider _provider;
-        private readonly List<IImGuiBackend> _backends;
-        private nint _context;
-        private bool _disposed = false;
+	private readonly IImGuiProvider _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+	private readonly List<IImGuiBackend> _backends = [];
+	private bool _disposed;
 
-        public ImGuiContext(IImGuiProvider provider)
-        {
-            _provider = provider ?? throw new ArgumentNullException(nameof(provider));
-            _backends = new List<IImGuiBackend>();
-        }
+	/// <summary>
+	/// Gets the underlying ImGui context handle
+	/// </summary>
+	public nint Context { get; private set; }
 
-        /// <summary>
-        /// Gets the underlying ImGui context handle
-        /// </summary>
-        public nint Context => _context;
+	/// <summary>
+	/// Gets whether the context has been initialized
+	/// </summary>
+	public bool IsInitialized => Context != nint.Zero;
 
-        /// <summary>
-        /// Gets whether the context has been initialized
-        /// </summary>
-        public bool IsInitialized => _context != nint.Zero;
+	/// <summary>
+	/// Initialize the ImGui context
+	/// </summary>
+	/// <returns>True if initialization was successful</returns>
+	public bool Initialize()
+	{
+		if (Context != nint.Zero)
+		{
+			return true; // Already initialized
+		}
 
-        /// <summary>
-        /// Initialize the ImGui context
-        /// </summary>
-        /// <returns>True if initialization was successful</returns>
-        public bool Initialize()
-        {
-            if (_context != nint.Zero)
-                return true; // Already initialized
+		Context = _provider.CreateContext();
+		if (Context == nint.Zero)
+		{
+			return false;
+		}
 
-            _context = _provider.CreateContext();
-            if (_context == nint.Zero)
-                return false;
+		_provider.SetCurrentContext(Context);
+		return true;
+	}
 
-            _provider.SetCurrentContext(_context);
-            return true;
-        }
+	/// <summary>
+	/// Add a backend to this context
+	/// </summary>
+	/// <param name="backend">Backend to add</param>
+	public void AddBackend(IImGuiBackend backend)
+	{
+		ArgumentNullException.ThrowIfNull(backend);
 
-        /// <summary>
-        /// Add a backend to this context
-        /// </summary>
-        /// <param name="backend">Backend to add</param>
-        public void AddBackend(IImGuiBackend backend)
-        {
-            if (backend == null)
-                throw new ArgumentNullException(nameof(backend));
+		_backends.Add(backend);
 
-            _backends.Add(backend);
+		if (Context != nint.Zero)
+		{
+			backend.SetCurrentContext(Context);
+		}
+	}
 
-            if (_context != nint.Zero)
-            {
-                backend.SetCurrentContext(_context);
-            }
-        }
+	/// <summary>
+	/// Remove a backend from this context
+	/// </summary>
+	/// <param name="backend">Backend to remove</param>
+	public void RemoveBackend(IImGuiBackend backend)
+	{
+		if (backend != null)
+		{
+			_backends.Remove(backend);
+		}
+	}
 
-        /// <summary>
-        /// Remove a backend from this context
-        /// </summary>
-        /// <param name="backend">Backend to remove</param>
-        public void RemoveBackend(IImGuiBackend backend)
-        {
-            if (backend != null)
-            {
-                _backends.Remove(backend);
-            }
-        }
+	/// <summary>
+	/// Initialize all backends
+	/// </summary>
+	/// <returns>True if all backends initialized successfully</returns>
+	public bool InitializeBackends()
+	{
+		foreach (IImGuiBackend backend in _backends)
+		{
+			if (Context != nint.Zero)
+			{
+				backend.SetCurrentContext(Context);
+			}
 
-        /// <summary>
-        /// Initialize all backends
-        /// </summary>
-        /// <returns>True if all backends initialized successfully</returns>
-        public bool InitializeBackends()
-        {
-            foreach (var backend in _backends)
-            {
-                if (_context != nint.Zero)
-                {
-                    backend.SetCurrentContext(_context);
-                }
+			if (!backend.Initialize())
+			{
+				return false;
+			}
+		}
+		return true;
+	}
 
-                if (!backend.Initialize())
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
+	/// <summary>
+	/// Begin a new ImGui frame
+	/// </summary>
+	public void BeginFrame()
+	{
+		if (Context == nint.Zero)
+		{
+			throw new InvalidOperationException("Context not initialized");
+		}
 
-        /// <summary>
-        /// Begin a new ImGui frame
-        /// </summary>
-        public void BeginFrame()
-        {
-            if (_context == nint.Zero)
-                throw new InvalidOperationException("Context not initialized");
+		_provider.SetCurrentContext(Context);
 
-            _provider.SetCurrentContext(_context);
+		// Call NewFrame on all backends first
+		foreach (IImGuiBackend backend in _backends)
+		{
+			backend.NewFrame();
+		}
 
-            // Call NewFrame on all backends first
-            foreach (var backend in _backends)
-            {
-                backend.NewFrame();
-            }
+		// Then call ImGui NewFrame
+		_provider.NewFrame();
+	}
 
-            // Then call ImGui NewFrame
-            _provider.NewFrame();
-        }
+	/// <summary>
+	/// End the current ImGui frame and render
+	/// </summary>
+	public void EndFrame()
+	{
+		if (Context == nint.Zero)
+		{
+			throw new InvalidOperationException("Context not initialized");
+		}
 
-        /// <summary>
-        /// End the current ImGui frame and render
-        /// </summary>
-        public void EndFrame()
-        {
-            if (_context == nint.Zero)
-                throw new InvalidOperationException("Context not initialized");
+		_provider.SetCurrentContext(Context);
+		_provider.Render();
 
-            _provider.SetCurrentContext(_context);
-            _provider.Render();
+		nint drawData = _provider.GetDrawData();
 
-            var drawData = _provider.GetDrawData();
+		// Render with all backends
+		foreach (IImGuiBackend backend in _backends)
+		{
+			backend.RenderDrawData(drawData);
+		}
 
-            // Render with all backends
-            foreach (var backend in _backends)
-            {
-                backend.RenderDrawData(drawData);
-            }
+		// Handle multi-viewport rendering
+		_provider.UpdatePlatformWindows();
+		_provider.RenderPlatformWindowsDefault();
+	}
 
-            // Handle multi-viewport rendering
-            _provider.UpdatePlatformWindows();
-            _provider.RenderPlatformWindowsDefault();
-        }
+	/// <inheritdoc />
+	public void Dispose()
+	{
+		Dispose(disposing: true);
+		GC.SuppressFinalize(this);
+	}
 
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
+	/// <inheritdoc/>
+	protected virtual void Dispose(bool disposing)
+	{
+		if (!_disposed)
+		{
+			if (disposing)
+			{
+				// Shutdown all backends
+				foreach (IImGuiBackend backend in _backends)
+				{
+					backend.Shutdown();
+					backend.Dispose();
+				}
+				_backends.Clear();
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed)
-            {
-                if (disposing)
-                {
-                    // Shutdown all backends
-                    foreach (var backend in _backends)
-                    {
-                        backend.Shutdown();
-                        backend.Dispose();
-                    }
-                    _backends.Clear();
+				// Destroy context
+				if (Context != nint.Zero)
+				{
+					_provider.DestroyContext(Context);
+					Context = nint.Zero;
+				}
 
-                    // Destroy context
-                    if (_context != nint.Zero)
-                    {
-                        _provider.DestroyContext(_context);
-                        _context = nint.Zero;
-                    }
-                }
+				// Dispose provider
+				_provider.Dispose();
+			}
 
-                _disposed = true;
-            }
-        }
-    }
+			_disposed = true;
+		}
+	}
 }
