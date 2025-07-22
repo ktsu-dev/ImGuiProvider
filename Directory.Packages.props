@@ -1,11 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
     <!-- Main Application Dependencies -->
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.7" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.7" />
     <PackageVersion Include="Hexa.NET.ImGui" Version="2.2.8.4" />
     <PackageVersion Include="Hexa.NET.ImGui.Backends" Version="1.0.17.4" />
     <PackageVersion Include="Hexa.NET.ImGui.Backends.GLFW" Version="1.0.17.4" />
