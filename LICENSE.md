@@ -1,6 +1,6 @@
 MIT License
 
-https://github.com/ktsu-dev/ImGuiWidgets
+https://github.com/ktsu-dev/ImGuiProvider
 
 Copyright (c) 2023-2025 ktsu-dev
 
