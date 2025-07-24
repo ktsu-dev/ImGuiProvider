@@ -1,6 +1,6 @@
 ## v1.0.0
 
-No significant changes detected since v1.0.0.
+Changes since v1.0.0:
 ## v1.0.0 (major)
 
 - Initial commit: Add project structure with essential configuration files, including .editorconfig, .gitattributes, .gitignore, and CI/CD workflows. Introduce PowerShell build automation module (PSBuild) and related scripts for .NET applications. Include licensing, authorship, and changelog files for project documentation. ([@matt-edmondson](https://github.com/matt-edmondson))
