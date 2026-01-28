@@ -76,6 +76,14 @@ function Test-IsLibraryOnlyProject {
     # Get the repository name to identify the main project
     $repoName = (Get-Item -Path $RootDir).Name
 
+    # Check for generated NuGet packages in bin directories (indicator, not definitive)
+    $nupkgFiles = Get-ChildItem -Path $RootDir -Filter "*.nupkg" -Recurse -File -ErrorAction SilentlyContinue |
+                  Where-Object { $_.Directory.Name -eq "Release" -or $_.Directory.Name -eq "Debug" }
+    if ($nupkgFiles.Count -gt 0) {
+        Write-Host "Detected NuGet package files" -ForegroundColor Yellow
+        $hasLibraries = $true
+    }
+
     # Check for C# projects
     if ($ProjectInfo.type -eq "csharp") {
         $csprojFiles = Get-ChildItem -Path $RootDir -Filter "*.csproj" -Recurse -File -Depth 3
@@ -84,40 +92,53 @@ function Test-IsLibraryOnlyProject {
             $csprojContent = Get-Content -Path $csprojFile.FullName -Raw
             $projectName = $csprojFile.BaseName
 
-            # Check if this specific project is a library
-            if ($csprojContent -match "<OutputType>\s*Library\s*</OutputType>" -or
-                $csprojContent -match "<PackageId>" -or
-                $csprojContent -match "<GeneratePackageOnBuild>\s*true\s*</GeneratePackageOnBuild>" -or
-                $csprojContent -match "<IsPackable>\s*true\s*</IsPackable>" -or
-                $csprojContent -match 'Sdk="[^"]*\.Lib["/]' -or
-                $csprojContent -match 'Sdk="[^"]*Sdk\.Lib["/]' -or
-                $csprojContent -match 'Sdk="[^"]*Library[^"]*"') {
+            # Check if this is the main project (matches repository name or starts with it)
+            # For multi-project solutions like "Semantics.Strings" in repo "Semantics"
+            $isMainProject = ($projectName -eq $repoName -or $projectName.StartsWith("$repoName."))
+
+            # Skip test projects
+            $isTestProject = ($csprojContent -match 'Sdk="[^"]*\.Test["/]' -or
+                            $csprojContent -match 'Sdk="[^"]*Sdk\.Test["/]' -or
+                            $csprojContent -match 'Sdk="[^"]*Test[^"]*"' -or
+                            $projectName -match "Test" -or
+                            $projectName -match "\.Tests$")
+
+            # Skip demo/example projects
+            $isDemoProject = ($projectName -match "Demo|Example|Sample" -or
+                            $projectName.Contains("Demo") -or
+                            $projectName.Contains("Example") -or
+                            $projectName.Contains("Sample"))
+
+            if ($isTestProject -or $isDemoProject) {
+                continue
+            }
+
+            # Explicitly check if it's an executable
+            $isExecutable = ($csprojContent -match "<OutputType>\s*Exe\s*</OutputType>" -or
+                           $csprojContent -match "<OutputType>\s*WinExe\s*</OutputType>" -or
+                           $csprojContent -match 'Sdk="[^"]*\.App["/]' -or
+                           $csprojContent -match 'Sdk="[^"]*Sdk\.App["/]')
+
+            # Check if it's a library (explicit markers or implicit)
+            $isLibrary = ($csprojContent -match "<OutputType>\s*Library\s*</OutputType>" -or
+                         $csprojContent -match "<PackageId>" -or
+                         $csprojContent -match "<GeneratePackageOnBuild>\s*true\s*</GeneratePackageOnBuild>" -or
+                         $csprojContent -match "<IsPackable>\s*true\s*</IsPackable>" -or
+                         $csprojContent -match 'Sdk="[^"]*\.Lib["/]' -or
+                         $csprojContent -match 'Sdk="[^"]*Sdk\.Lib["/]' -or
+                         $csprojContent -match 'Sdk="[^"]*Library[^"]*"' -or
+                         $csprojContent -match "<TargetFrameworks>" -or  # Multiple target frameworks often = library
+                         (-not $isExecutable))  # No explicit exe = library by default
+
+            if ($isLibrary) {
                 $hasLibraries = $true
-                
-                # Check if this is the main project (matches repository name)
-                if ($projectName -eq $repoName) {
+                if ($isMainProject) {
                     $isMainProjectLibrary = $true
                 }
             }
-            # Check if this specific project is an application (but not test or demo)
-            elseif (($csprojContent -match "<OutputType>\s*Exe\s*</OutputType>" -or
-                    $csprojContent -match "<OutputType>\s*WinExe\s*</OutputType>" -or
-                    $csprojContent -match 'Sdk="[^"]*\.App["/]' -or
-                    $csprojContent -match 'Sdk="[^"]*Sdk\.App["/]' -or
-                    ((-not ($csprojContent -match "<OutputType>")) -and
-                    (-not ($csprojContent -match "<PackageId>")) -and
-                    (-not ($csprojContent -match "<GeneratePackageOnBuild>\s*true\s*</GeneratePackageOnBuild>")))) -and
-                    (-not ($csprojContent -match 'Sdk="[^"]*\.Lib["/]')) -and
-                    (-not ($csprojContent -match 'Sdk="[^"]*Sdk\.Lib["/]')) -and
-                    (-not ($csprojContent -match 'Sdk="[^"]*\.Test["/]')) -and
-                    (-not ($csprojContent -match 'Sdk="[^"]*Sdk\.Test["/]')) -and
-                    (-not ($csprojContent -match 'Sdk="[^"]*Library[^"]*"')) -and
-                    (-not ($csprojContent -match 'Sdk="[^"]*Test[^"]*"'))) {
-                
-                # Don't count demo/example applications as main applications
-                if (-not ($projectName -match "Demo|Example|Sample" -or $projectName.Contains("Demo") -or $projectName.Contains("Example") -or $projectName.Contains("Sample"))) {
-                    $hasApplications = $true
-                }
+
+            if ($isExecutable) {
+                $hasApplications = $true
             }
         }
     }
@@ -790,15 +811,31 @@ Write-Host "  Tags: $($config.tags -join ', ')" -ForegroundColor Cyan
 $releaseUrl = "https://api.github.com/repos/$($config.githubRepo)/releases/tags/v$Version"
 $downloadBaseUrl = "https://github.com/$($config.githubRepo)/releases/download/v$Version"
 
+# Build headers for GitHub API requests (with optional authentication)
+$githubHeaders = @{
+    "User-Agent" = "Winget-Manifest-Updater"
+    "Accept" = "application/vnd.github.v3+json"
+}
+
+# Check for GITHUB_TOKEN environment variable for authenticated requests (higher rate limit)
+$githubToken = $env:GITHUB_TOKEN
+if (-not $githubToken) {
+    $githubToken = $env:GH_TOKEN
+}
+if ($githubToken) {
+    $githubHeaders["Authorization"] = "Bearer $githubToken"
+    Write-Host "Using authenticated GitHub API requests" -ForegroundColor Green
+} else {
+    Write-Host "Warning: No GITHUB_TOKEN found. API requests may be rate-limited." -ForegroundColor Yellow
+    Write-Host "Set GITHUB_TOKEN environment variable for authenticated requests." -ForegroundColor Yellow
+}
+
 Write-Host "Updating winget manifests for $($config.packageName) version $Version..." -ForegroundColor Green
 
 # Fetch release information from GitHub
 try {
     Write-Host "Fetching release information from GitHub..." -ForegroundColor Yellow
-    $release = Invoke-RestMethod -Uri $releaseUrl -Headers @{
-        "User-Agent" = "Winget-Manifest-Updater"
-        "Accept" = "application/vnd.github.v3+json"
-    }
+    $release = Invoke-RestMethod -Uri $releaseUrl -Headers $githubHeaders
 
     Write-Host "Found release: $($release.name)" -ForegroundColor Green
     $releaseDate = [DateTime]::Parse($release.published_at).ToString("yyyy-MM-dd")
