@@ -1,18 +1,8 @@
-## v1.0.1-pre.1 (prerelease)
+## v1.0.1 (patch)
 
 Changes since v1.0.0:
 
-- Sync .runsettings ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .editorconfig ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .gitignore ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\update-sdks.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .gitattributes ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\update-winget-manifests.ps1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Merge remote-tracking branch 'refs/remotes/origin/main' ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync scripts\PSBuild.psm1 ([@ktsu[bot]](https://github.com/ktsu[bot]))
-- Sync global.json ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Remove .github\workflows\project.yml ([@matt-edmondson](https://github.com/matt-edmondson))
 ## v1.0.0 (major)
 
 - Initial commit: Add project structure with essential configuration files, including .editorconfig, .gitattributes, .gitignore, and CI/CD workflows. Introduce PowerShell build automation module (PSBuild) and related scripts for .NET applications. Include licensing, authorship, and changelog files for project documentation. ([@matt-edmondson](https://github.com/matt-edmondson))
