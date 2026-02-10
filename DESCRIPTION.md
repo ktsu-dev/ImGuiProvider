@@ -1,0 +1,1 @@
+A dependency injection abstraction layer over ImGui implementations for .NET. Wraps Hexa.NET.ImGui behind clean interfaces (IImGuiProvider, IImGuiBackend) enabling swappable backends, testable UI code, and standard DI integration via Microsoft.Extensions.DependencyInjection.

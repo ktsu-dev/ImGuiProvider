@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ImGuiProvider is a .NET library that provides a dependency injection abstraction layer over ImGui implementations. It wraps the Hexa.NET.ImGui library behind interfaces (`IImGuiProvider`, `IImGuiBackend`) so consuming applications can swap ImGui backends without changing application code.
 
-Part of the [ktsu.dev](https://ktsu.dev) ecosystem. Uses `ktsu.Sdk.Lib` for build configuration.
+Part of the [ktsu.dev](https://ktsu.dev) ecosystem. Uses the standard two-`<Sdk>` element pattern (`Microsoft.NET.Sdk` + `ktsu.Sdk`).
 
 ## Build Commands
 
@@ -17,22 +17,37 @@ dotnet build
 # Build release
 dotnet build --configuration Release
 
+# Run tests
+dotnet test
+
 # Pack for NuGet
 dotnet pack --configuration Release --output ./staging
 ```
 
-No test project exists yet. The solution contains only the library project.
+## Testing
+
+The test project (`ImGuiProvider.Test/`) contains 28 tests using MSTest and Moq. Tests target .NET 10.0 only.
+
+**Important:** `HexaNetImGuiProvider` loads native ImGui libraries that hang in test environments. All tests use Moq mocks for `IImGuiProvider` and `IImGuiBackend` instead of resolving real implementations. DI registration tests use service descriptor inspection (`services.FirstOrDefault(d => d.ServiceType == ...)`) rather than `GetRequiredService<T>()` to avoid triggering native library loading.
+
+```bash
+# Run all tests
+dotnet test
+
+# Run specific test
+dotnet test --filter "FullyQualifiedName~ImGuiContextTests.Initialize_CreatesContextViaProvider"
+```
 
 ## Architecture
 
 ### Layer Structure
 
 ```
-Extensions/ServiceCollectionExtensions.cs  ← DI registration entry point
-Services/ImGuiContext.cs                   ← Context lifecycle manager
-Interfaces/IImGuiProvider.cs               ← 160+ method ImGui API surface
-Interfaces/IImGuiBackend.cs                ← Backend abstraction (3 interfaces)
-Implementations/HexaNet/HexaNetImGuiProvider.cs ← Hexa.NET.ImGui wrapper
+Extensions/ServiceCollectionExtensions.cs  <- DI registration entry point
+Services/ImGuiContext.cs                   <- Context lifecycle manager
+Interfaces/IImGuiProvider.cs               <- 160+ method ImGui API surface
+Interfaces/IImGuiBackend.cs                <- Backend abstraction (3 interfaces)
+Implementations/HexaNet/HexaNetImGuiProvider.cs <- Hexa.NET.ImGui wrapper
 ```
 
 ### Key Interfaces
@@ -49,12 +64,12 @@ Implementations/HexaNet/HexaNetImGuiProvider.cs ← Hexa.NET.ImGui wrapper
 ### Frame Lifecycle
 
 `ImGuiContext` orchestrates the render loop:
-1. `Initialize()` → creates ImGui context via provider
-2. `AddBackend()` → registers platform/renderer backends
-3. `InitializeBackends()` → initializes all backends
-4. `BeginFrame()` → sets context, calls `NewFrame()` on backends then provider
-5. `EndFrame()` → calls `Render()`, gets draw data, renders via backends, updates platform windows
-6. `Dispose()` → shuts down backends, destroys context, disposes provider
+1. `Initialize()` - creates ImGui context via provider
+2. `AddBackend()` - registers platform/renderer backends
+3. `InitializeBackends()` - initializes all backends
+4. `BeginFrame()` - sets context, calls `NewFrame()` on backends then provider
+5. `EndFrame()` - calls `Render()`, gets draw data, renders via backends, updates platform windows
+6. `Dispose()` - shuts down backends, destroys context, disposes provider
 
 ### Unsafe Code
 
@@ -64,7 +79,15 @@ Implementations/HexaNet/HexaNetImGuiProvider.cs ← Hexa.NET.ImGui wrapper
 
 - **Hexa.NET.ImGui** (2.2.8.4) - Core ImGui bindings
 - **Microsoft.Extensions.DependencyInjection** (9.0.7) - DI framework
+- **Polyfill** (9.7.7) - Cross-framework compatibility (provides `Ensure.NotNull()`)
+- **Moq** (4.20.72) - Test mocking (test project only)
 - Central Package Management via `Directory.Packages.props`
+
+## Project-Specific Conventions
+
+- Uses `Ensure.NotNull()` from Polyfill instead of `ArgumentNullException.ThrowIfNull()` (enforced by KTSU0003/KTSU0004 analyzers)
+- Target frameworks: `net10.0;net9.0;net8.0` (Hexa.NET.ImGui doesn't support older frameworks)
+- API compatibility suppression file (`CompatibilitySuppressions.xml`) handles Polyfill type differences across target frameworks
 
 ## Adding a New Backend Implementation
 

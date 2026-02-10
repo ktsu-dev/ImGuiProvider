@@ -1,83 +1,65 @@
 # ImGuiProvider
 
-A dependency injection wrapper library for ImGui implementations, providing a clean abstraction over ImGui libraries with support for multiple backends.
+A dependency injection abstraction layer over ImGui implementations for .NET, providing clean interfaces and swappable backends.
 
 ## Features
 
-- **Dependency Injection**: Clean DI integration with `Microsoft.Extensions.DependencyInjection`
-- **Provider Abstraction**: `IImGuiProvider` interface allows swapping ImGui implementations
-- **Backend Support**: Separate interfaces for platform and renderer backends
-- **Hexa.NET.ImGui**: Built-in implementation using Hexa.NET.ImGui
-- **SOLID Principles**: Follows SOLID design principles with clear separation of concerns
-- **Context Management**: High-level context management with lifecycle handling
+- **Dependency Injection** - Clean integration with `Microsoft.Extensions.DependencyInjection`
+- **Provider Abstraction** - `IImGuiProvider` interface wrapping 160+ ImGui methods allows swapping implementations
+- **Backend Support** - Separate `IPlatformBackend` and `IRendererBackend` interfaces for windowing and rendering
+- **Context Management** - `ImGuiContext` handles the full frame lifecycle (initialize, begin frame, end frame, dispose)
+- **Built-in Implementation** - Ships with `HexaNetImGuiProvider` wrapping Hexa.NET.ImGui
 
 ## Installation
 
-```xml
-<PackageReference Include="ImGuiProvider" Version="1.0.0" />
+```bash
+dotnet add package ktsu.ImGuiProvider
 ```
 
 ## Quick Start
 
-### Basic Setup with Dependency Injection
-
 ```csharp
 using ImGuiProvider.Extensions;
+using ImGuiProvider.Services;
 using Microsoft.Extensions.DependencyInjection;
 
-// Configure services
 var services = new ServiceCollection();
-services.AddImGui(); // Uses Hexa.NET.ImGui by default
+services.AddImGui(); // Registers HexaNetImGuiProvider as singleton
 
-// Build service provider
 var serviceProvider = services.BuildServiceProvider();
-
-// Get ImGui context
-var imguiContext = serviceProvider.GetRequiredService<ImGuiContext>();
+var context = serviceProvider.GetRequiredService<ImGuiContext>();
 ```
 
-### Advanced Setup with Backends
+## Usage with Backends
 
 ```csharp
-using ImGuiProvider.Extensions;
-using Microsoft.Extensions.DependencyInjection;
-
 var services = new ServiceCollection();
-
-// Add ImGui provider
 services.AddImGui();
-
-// Add backends (assumes you have GLFW window handle)
-services.AddImGuiGLFWBackend(windowHandle, installCallbacks: true);
-services.AddImGuiOpenGL3Backend(glslVersion: "#version 330");
+services.AddImGuiBackend<MyPlatformBackend>();
+services.AddImGuiBackend<MyRendererBackend>();
 
 var serviceProvider = services.BuildServiceProvider();
-
-// Initialize and use
 var context = serviceProvider.GetRequiredService<ImGuiContext>();
-var glfwBackend = serviceProvider.GetRequiredService<IPlatformBackend>();
-var openglBackend = serviceProvider.GetRequiredService<IRendererBackend>();
 
-// Initialize context and backends
+// Resolve and attach backends
+var platformBackend = serviceProvider.GetRequiredService<IPlatformBackend>();
+var rendererBackend = serviceProvider.GetRequiredService<IRendererBackend>();
+
 context.Initialize();
-context.AddBackend(glfwBackend);
-context.AddBackend(openglBackend);
+context.AddBackend(platformBackend);
+context.AddBackend(rendererBackend);
 context.InitializeBackends();
 
-// Main loop
+// Render loop
 while (running)
 {
-    // Process events...
-    
     context.BeginFrame();
-    
+
     // Your ImGui code here
     var provider = serviceProvider.GetRequiredService<IImGuiProvider>();
     provider.ShowDemoWindow();
-    
+
     context.EndFrame();
-    
-    // Swap buffers...
 }
 
 context.Dispose();
@@ -92,25 +74,20 @@ The main abstraction over ImGui functionality:
 ```csharp
 public interface IImGuiProvider : IDisposable
 {
-    // Context management
     nint CreateContext();
     void SetCurrentContext(nint context);
     nint GetCurrentContext();
     void DestroyContext(nint context);
-
-    // Frame management
     void NewFrame();
     void EndFrame();
     void Render();
     nint GetDrawData();
-
-    // UI methods
     bool Begin(string name);
     void End();
     void Text(string text);
     bool Button(string label);
     void ShowDemoWindow();
-    // ... and more
+    // ... 160+ methods covering the full ImGui API
 }
 ```
 
@@ -130,7 +107,7 @@ public interface IImGuiBackend : IDisposable
 }
 ```
 
-### IPlatformBackend & IRendererBackend
+### IPlatformBackend and IRendererBackend
 
 Specialized backend interfaces:
 
@@ -147,80 +124,46 @@ public interface IRendererBackend : IImGuiBackend
 }
 ```
 
-## Built-in Implementations
-
-### HexaNetImGuiProvider
-
-Uses Hexa.NET.ImGui as the underlying implementation:
-
-```csharp
-services.AddImGui(); // Default Hexa.NET implementation
-```
-
-### Available Backends
-
-- **HexaNetOpenGL3Backend**: OpenGL 3+ renderer using Hexa.NET.ImGui.Backends
-- **HexaNetGLFWBackend**: GLFW platform backend using Hexa.NET.ImGui.Backends.GLFW
-
 ## Custom Implementations
 
 ### Custom Provider
 
 ```csharp
-public class MyImGuiProvider : IImGuiProvider
+public class MyProvider : IImGuiProvider
 {
-    // Implement interface methods
-    public nint CreateContext() => /* your implementation */;
-    // ... etc
+    // Implement all IImGuiProvider methods
 }
 
-// Register custom provider
-services.AddImGui<MyImGuiProvider>();
+services.AddImGui<MyProvider>();
+// Or with a factory:
+services.AddImGui(sp => new MyProvider());
 ```
 
 ### Custom Backend
 
 ```csharp
-public class MyCustomBackend : IRendererBackend
+public class MyBackend : IRendererBackend
 {
-    public string Name => "My Custom Backend";
-    // Implement interface methods
+    public string Name => "My Backend";
+    public bool Initialize() => true;
+    public void Shutdown() { }
+    public void NewFrame() { }
+    public void RenderDrawData(nint drawData) { }
+    public void SetCurrentContext(nint context) { }
+    public bool CreateDeviceObjects() => true;
+    public void InvalidateDeviceObjects() { }
+    public void Dispose() { }
 }
 
-// Register custom backend
-services.AddImGuiBackend<MyCustomBackend>();
-```
-
-## Architecture
-
-The library follows SOLID principles with clear separation:
-
-```
-┌─────────────────┐    ┌─────────────────────┐
-│   Application   │────│  ImGuiContext       │
-└─────────────────┘    └─────────────────────┘
-                              │
-                    ┌─────────┴─────────┐
-                    │                   │
-            ┌───────▼────────┐  ┌───────▼─────────┐
-            │ IImGuiProvider │  │ IImGuiBackend   │
-            └────────────────┘  └─────────────────┘
-                    │                   │
-        ┌───────────▼──────────┐       │
-        │ HexaNetImGuiProvider │       │
-        └──────────────────────┘       │
-                               ┌───────▼─────────────┐
-                               │ Platform & Renderer │
-                               │     Backends        │
-                               └─────────────────────┘
+services.AddImGuiBackend<MyBackend>();
 ```
 
 ## Requirements
 
-- .NET 8.0 or later
-- Hexa.NET.ImGui 2.1.7 or later
-- Microsoft.Extensions.DependencyInjection.Abstractions 8.0.0 or later
+- .NET 8.0, 9.0, or 10.0
+- Hexa.NET.ImGui 2.2.8.4
+- Microsoft.Extensions.DependencyInjection.Abstractions 9.0.7
 
 ## License
 
-MIT License 
+MIT License
