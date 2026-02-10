@@ -3,6 +3,7 @@
 // Licensed under the MIT license.
 
 namespace ImGuiProvider.Interfaces;
+
 using System.Numerics;
 
 /// <summary>

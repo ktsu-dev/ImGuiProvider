@@ -3,6 +3,7 @@
 // Licensed under the MIT license.
 
 namespace ImGuiProvider.Implementations.HexaNet;
+
 using System.Numerics;
 using Hexa.NET.ImGui;
 using ImGuiProvider.Interfaces;

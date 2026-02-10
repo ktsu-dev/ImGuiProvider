@@ -3,6 +3,7 @@
 // Licensed under the MIT license.
 
 namespace ImGuiProvider.Extensions;
+
 using ImGuiProvider.Implementations.HexaNet;
 using ImGuiProvider.Interfaces;
 using ImGuiProvider.Services;

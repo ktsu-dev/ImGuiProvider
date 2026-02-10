@@ -3,6 +3,7 @@
 // Licensed under the MIT license.
 
 namespace ImGuiProvider.Examples;
+
 using ImGuiProvider.Extensions;
 using ImGuiProvider.Interfaces;
 using ImGuiProvider.Services;

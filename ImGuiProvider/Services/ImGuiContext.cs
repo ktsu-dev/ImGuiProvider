@@ -3,6 +3,7 @@
 // Licensed under the MIT license.
 
 namespace ImGuiProvider.Services;
+
 using ImGuiProvider.Interfaces;
 
 /// <summary>
@@ -10,7 +11,7 @@ using ImGuiProvider.Interfaces;
 /// </summary>
 public class ImGuiContext(IImGuiProvider provider) : IDisposable
 {
-	private readonly IImGuiProvider _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+	private readonly IImGuiProvider _provider = Ensure.NotNull(provider);
 	private readonly List<IImGuiBackend> _backends = [];
 	private bool _disposed;
 
@@ -51,7 +52,7 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	/// <param name="backend">Backend to add</param>
 	public void AddBackend(IImGuiBackend backend)
 	{
-		ArgumentNullException.ThrowIfNull(backend);
+		Ensure.NotNull(backend);
 
 		_backends.Add(backend);
 
