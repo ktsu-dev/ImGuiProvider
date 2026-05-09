@@ -1,0 +1,1 @@
+imgui provider;dependency injection;dear imgui;provider pattern;abstraction;hexa net;backend abstraction;rendering;windowing;dotnet;csharp
