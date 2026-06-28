@@ -418,7 +418,7 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 		ImGui.TreeNodeEx(strId, (ImGuiTreeNodeFlags)flags, fmt);
 
 	/// <inheritdoc />
-	public unsafe bool TreeNodeExtended(void* ptrId, int flags, string fmt) =>
+	public bool TreeNodeExtended(void* ptrId, int flags, string fmt) =>
 		ImGui.TreeNodeEx(ptrId, (ImGuiTreeNodeFlags)flags, fmt);
 
 	/// <inheritdoc />
@@ -455,10 +455,10 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 
 	// Plot/Graph widgets (simple versions)
 	/// <inheritdoc />
-	public unsafe void PlotLines(string label, float* values, int valuesCount, int valuesOffset = 0, string? overlayText = null, float scaleMin = float.MaxValue, float scaleMax = float.MaxValue, Vector2 graphSize = default, int stride = sizeof(float)) => ImGui.PlotLines(label, values, valuesCount, valuesOffset, overlayText, scaleMin, scaleMax, graphSize, stride);
+	public void PlotLines(string label, float* values, int valuesCount, int valuesOffset = 0, string? overlayText = null, float scaleMin = float.MaxValue, float scaleMax = float.MaxValue, Vector2 graphSize = default, int stride = sizeof(float)) => ImGui.PlotLines(label, values, valuesCount, valuesOffset, overlayText, scaleMin, scaleMax, graphSize, stride);
 
 	/// <inheritdoc />
-	public unsafe void PlotHistogram(string label, float* values, int valuesCount, int valuesOffset = 0, string? overlayText = null, float scaleMin = float.MaxValue, float scaleMax = float.MaxValue, Vector2 graphSize = default, int stride = sizeof(float)) => ImGui.PlotHistogram(label, values, valuesCount, valuesOffset, overlayText, scaleMin, scaleMax, graphSize, stride);
+	public void PlotHistogram(string label, float* values, int valuesCount, int valuesOffset = 0, string? overlayText = null, float scaleMin = float.MaxValue, float scaleMax = float.MaxValue, Vector2 graphSize = default, int stride = sizeof(float)) => ImGui.PlotHistogram(label, values, valuesCount, valuesOffset, overlayText, scaleMin, scaleMax, graphSize, stride);
 
 	// Menus
 	/// <inheritdoc />
@@ -584,7 +584,7 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 	}
 
 	/// <inheritdoc />
-	public unsafe void DrawTextWithFont(nint drawList, nint font, float fontSize, Vector2 pos, uint col, string text, float wrapWidth = 0.0f, Vector4* cpuFineClipRect = null)
+	public void DrawTextWithFont(nint drawList, nint font, float fontSize, Vector2 pos, uint col, string text, float wrapWidth = 0.0f, Vector4* cpuFineClipRect = null)
 	{
 		ImDrawListPtr list = new((ImDrawList*)drawList);
 		ImFontPtr fontPtr = new((ImFont*)font);
@@ -607,7 +607,7 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 	}
 
 	/// <inheritdoc />
-	public unsafe nint AddFontFromFileTTF(string filename, float sizePixels, nint fontCfg = 0, ushort* glyphRanges = null)
+	public nint AddFontFromFileTTF(string filename, float sizePixels, nint fontCfg = 0, ushort* glyphRanges = null)
 	{
 		ImFontAtlasPtr atlas = ImGui.GetIO().Fonts;
 		ImFontConfigPtr config = fontCfg != 0 ? new((ImFontConfig*)fontCfg) : new();
@@ -616,7 +616,7 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 	}
 
 	/// <inheritdoc />
-	public unsafe nint AddFontFromMemoryTTF(byte* fontData, int fontDataSize, float sizePixels, nint fontCfg = 0, ushort* glyphRanges = null)
+	public nint AddFontFromMemoryTTF(byte* fontData, int fontDataSize, float sizePixels, nint fontCfg = 0, ushort* glyphRanges = null)
 	{
 		ImFontAtlasPtr atlas = ImGui.GetIO().Fonts;
 		ImFontConfigPtr config = fontCfg != 0 ? new((ImFontConfig*)fontCfg) : new();
