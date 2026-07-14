@@ -1,6 +1,6 @@
-## v1.1.6 (patch)
+## v1.1.7 (patch)
 
-Changes since v1.1.5:
+Changes since v1.1.6:
 
-- Bump MSTest.Sdk from 4.3.0 to 4.3.2 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump the microsoft group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
