@@ -1,6 +1,6 @@
-## v1.1.7 (patch)
+## v1.1.8 (patch)
 
-Changes since v1.1.6:
+Changes since v1.1.7:
 
-- Bump the microsoft group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- Bump Polyfill from 10.11.2 to 11.0.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
