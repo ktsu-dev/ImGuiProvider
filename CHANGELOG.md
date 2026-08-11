@@ -1,3 +1,9 @@
+## v1.1.15 (patch)
+
+Changes since v1.1.14:
+
+- Bump the microsoft group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
+
 ## v1.1.14 (patch)
 
 Changes since v1.1.13:

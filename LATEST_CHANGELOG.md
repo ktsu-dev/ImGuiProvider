@@ -1,6 +1,6 @@
-## v1.1.14 (patch)
+## v1.1.15 (patch)
 
-Changes since v1.1.13:
+Changes since v1.1.14:
 
-- chore: update ktsu.Sdk to 2.21.1 [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Bump the microsoft group with 2 updates ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
