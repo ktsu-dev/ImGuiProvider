@@ -11,6 +11,6 @@
     <PackageReference Include="Hexa.NET.ImGui" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-    <PackageReference Include="Polyfill" />
+    <PackageReference Include="Polyfill" PrivateAssets="all" />
   </ItemGroup>
 </Project>
