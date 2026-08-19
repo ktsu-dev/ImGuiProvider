@@ -2,6 +2,14 @@
 
 A dependency injection abstraction layer over ImGui implementations for .NET, providing clean interfaces and swappable backends.
 
+[![License](https://img.shields.io/github/license/ktsu-dev/ImGuiProvider.svg?label=License&logo=nuget)](LICENSE.md)
+[![NuGet Version](https://img.shields.io/nuget/v/ktsu.ImGuiProvider?label=Stable&logo=nuget)](https://nuget.org/packages/ktsu.ImGuiProvider)
+[![NuGet Version](https://img.shields.io/nuget/vpre/ktsu.ImGuiProvider?label=Latest&logo=nuget)](https://nuget.org/packages/ktsu.ImGuiProvider)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/ktsu.ImGuiProvider?label=Downloads&logo=nuget)](https://nuget.org/packages/ktsu.ImGuiProvider)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ktsu-dev/ImGuiProvider?label=Commits&logo=github)](https://github.com/ktsu-dev/ImGuiProvider/commits/main)
+[![GitHub contributors](https://img.shields.io/github/contributors/ktsu-dev/ImGuiProvider?label=Contributors&logo=github)](https://github.com/ktsu-dev/ImGuiProvider/graphs/contributors)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ktsu-dev/ImGuiProvider/dotnet.yml?label=Build&logo=github)](https://github.com/ktsu-dev/ImGuiProvider/actions)
+
 ## Features
 
 - **Dependency Injection** - Clean integration with `Microsoft.Extensions.DependencyInjection`
