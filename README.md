@@ -8,7 +8,7 @@ A dependency injection abstraction layer over ImGui implementations for .NET, pr
 [![NuGet Downloads](https://img.shields.io/nuget/dt/ktsu.ImGuiProvider?label=Downloads&logo=nuget)](https://nuget.org/packages/ktsu.ImGuiProvider)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ktsu-dev/ImGuiProvider?label=Commits&logo=github)](https://github.com/ktsu-dev/ImGuiProvider/commits/main)
 [![GitHub contributors](https://img.shields.io/github/contributors/ktsu-dev/ImGuiProvider?label=Contributors&logo=github)](https://github.com/ktsu-dev/ImGuiProvider/graphs/contributors)
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ktsu-dev/ImGuiProvider/dotnet.yml?label=Build&logo=github)](https://github.com/ktsu-dev/ImGuiProvider/actions)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ktsu-dev/ImGuiProvider/dotnet.yml?branch=main&label=Build&logo=github)](https://github.com/ktsu-dev/ImGuiProvider/actions)
 
 ## Features
 
