@@ -6,7 +6,7 @@
     <PackageVersion Include="Hexa.NET.ImGui" Version="2.2.9" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
-    <PackageVersion Include="Polyfill" Version="11.3.0" />
+    <PackageVersion Include="Polyfill" Version="11.4.0" />
     <PackageVersion Include="Moq" Version="4.21.0" />
   </ItemGroup>
 </Project>
