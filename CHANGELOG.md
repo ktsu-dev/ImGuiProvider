@@ -1,6 +1,9 @@
-## v1.1.35
+## v1.1.36 (patch)
 
-No significant changes detected since v1.1.35.
+Changes since v1.1.35:
+
+- Word the native-test note so it holds for tests that run a frame ([@Claude](https://github.com/Claude))
+- Return the native ImGuiIO pointer from GetIO ([@Claude](https://github.com/Claude))
 
 ## v1.1.35 (patch)
 
