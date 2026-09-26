@@ -59,7 +59,7 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 	public nint GetIO()
 	{
 		ImGuiIOPtr io = ImGui.GetIO();
-		return (nint)(&io);
+		return (nint)io.Handle;
 	}
 
 	/// <inheritdoc />

@@ -9,12 +9,31 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>
 /// Tests that run <see cref="HexaNetImGuiProvider"/> against the native cimgui library,
-/// covering the argument marshalling that a mocked provider cannot observe.
+/// covering the pointer and argument marshalling that a mocked provider cannot observe.
 /// </summary>
 [TestClass]
 [DoNotParallelize]
 public sealed class HexaNetImGuiProviderTests
 {
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public unsafe void GetIO_ReturnsNativeIOHandle()
+	{
+		using HexaNetImGuiProvider provider = new();
+		nint context = provider.CreateContext();
+		try
+		{
+			provider.SetCurrentContext(context);
+			nint expected = (nint)ImGui.GetIO().Handle;
+
+			Assert.AreEqual(expected, provider.GetIO());
+		}
+		finally
+		{
+			provider.DestroyContext(context);
+		}
+	}
+
 	[TestMethod]
 	[Timeout(30000, CooperativeCancellation = true)]
 	public void Columns_DefaultFlags_DrawsBorders() =>
