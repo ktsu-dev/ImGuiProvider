@@ -30,7 +30,7 @@ The test project (`ImGuiProvider.Test/`) uses MSTest and Moq. Tests target .NET 
 
 Most tests use Moq mocks for `IImGuiProvider` and `IImGuiBackend` instead of resolving real implementations. DI registration tests use service descriptor inspection (`services.FirstOrDefault(d => d.ServiceType == ...)`) rather than `GetRequiredService<T>()` to avoid triggering native library loading.
 
-`HexaNetImGuiProviderTests` is the exception: it runs `HexaNetImGuiProvider` against the native cimgui library, because pointer marshalling bugs are invisible to a mock. Each test creates and destroys its own context without a backend or a frame, and carries a timeout in case the native load stalls.
+`HexaNetImGuiProviderTests` is the exception: it runs `HexaNetImGuiProvider` against the native cimgui library, because pointer marshalling bugs are invisible to a mock. Each test creates and destroys its own context, uses no backend, and carries a timeout in case the native load stalls.
 
 ```bash
 # Run all tests
