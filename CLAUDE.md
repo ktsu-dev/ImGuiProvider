@@ -26,9 +26,11 @@ dotnet pack --configuration Release --output ./staging
 
 ## Testing
 
-The test project (`ImGuiProvider.Test/`) contains 28 tests using MSTest and Moq. Tests target .NET 10.0 only.
+The test project (`ImGuiProvider.Test/`) uses MSTest and Moq. Tests target .NET 10.0 only.
 
-**Important:** `HexaNetImGuiProvider` loads native ImGui libraries that hang in test environments. All tests use Moq mocks for `IImGuiProvider` and `IImGuiBackend` instead of resolving real implementations. DI registration tests use service descriptor inspection (`services.FirstOrDefault(d => d.ServiceType == ...)`) rather than `GetRequiredService<T>()` to avoid triggering native library loading.
+Most tests use Moq mocks for `IImGuiProvider` and `IImGuiBackend` instead of resolving real implementations. DI registration tests use service descriptor inspection (`services.FirstOrDefault(d => d.ServiceType == ...)`) rather than `GetRequiredService<T>()` to avoid triggering native library loading.
+
+`HexaNetImGuiProviderTests` is the exception: it runs `HexaNetImGuiProvider` against the native cimgui library, because pointer marshalling bugs are invisible to a mock. Each test creates and destroys its own context without a backend or a frame, and carries a timeout in case the native load stalls.
 
 ```bash
 # Run all tests
