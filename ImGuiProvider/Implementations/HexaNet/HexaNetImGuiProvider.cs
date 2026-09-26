@@ -651,8 +651,27 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 
 	// Legacy Columns API Implementation
 	/// <inheritdoc />
-	public void Columns(string strId, int count, int flags = 0) =>
-		ImGui.Columns(count, strId, flags != 0);
+	public void Columns(string strId, int count, int flags = 0)
+	{
+		// ImGui.Columns only takes a border bool, so this mirrors ImGui::Columns with the full
+		// ImGuiOldColumnFlags instead: keep a matching set, else end it and begin the new one.
+		ImGuiOldColumnFlags columnFlags = (ImGuiOldColumnFlags)flags;
+		ImGuiOldColumns* current = ImGuiP.GetCurrentWindowRead().DC.CurrentColumns;
+		if (current != null && current->Count == count && current->Flags == columnFlags)
+		{
+			return;
+		}
+
+		if (current != null)
+		{
+			ImGuiP.EndColumns();
+		}
+
+		if (count != 1)
+		{
+			ImGuiP.BeginColumns(strId, count, columnFlags);
+		}
+	}
 
 	/// <inheritdoc />
 	public void Columns(int count = 1, string? id = null, bool borders = true) =>
