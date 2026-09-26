@@ -34,11 +34,38 @@ public sealed class HexaNetImGuiProviderTests
 		Assert.AreEqual(flags, ColumnsFlagsAfter(provider => provider.Columns("c", 2, (int)flags)));
 	}
 
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void Columns_RepeatedWithSameFlags_KeepsCurrentSet() =>
+		Assert.AreEqual(ImGuiOldColumnFlags.NoBorder, ColumnsFlagsAfter(provider =>
+		{
+			provider.Columns("c", 2, (int)ImGuiOldColumnFlags.NoBorder);
+			provider.Columns("c", 2, (int)ImGuiOldColumnFlags.NoBorder);
+		}));
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void Columns_ChangedFlags_ReplacesCurrentSet() =>
+		Assert.AreEqual(ImGuiOldColumnFlags.None, ColumnsFlagsAfter(provider =>
+		{
+			provider.Columns("c", 2, (int)ImGuiOldColumnFlags.NoBorder);
+			provider.Columns("c", 2);
+		}));
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void Columns_CountOfOne_EndsCurrentSet() =>
+		Assert.IsNull(ColumnsFlagsAfter(provider =>
+		{
+			provider.Columns("c", 2);
+			provider.Columns("c", 1);
+		}));
+
 	/// <summary>
 	/// Runs <paramref name="columns"/> inside a window in a real frame, and returns the flags of the
-	/// columns set it left current.
+	/// columns set it left current, or <see langword="null"/> when it left none.
 	/// </summary>
-	private static unsafe ImGuiOldColumnFlags ColumnsFlagsAfter(Action<HexaNetImGuiProvider> columns)
+	private static unsafe ImGuiOldColumnFlags? ColumnsFlagsAfter(Action<HexaNetImGuiProvider> columns)
 	{
 		using HexaNetImGuiProvider provider = new();
 		nint context = provider.CreateContext();
@@ -53,7 +80,8 @@ public sealed class HexaNetImGuiProviderTests
 			provider.NewFrame();
 			provider.Begin("window");
 			columns(provider);
-			ImGuiOldColumnFlags flags = ImGuiP.GetCurrentWindow().DC.CurrentColumns->Flags;
+			ImGuiOldColumns* current = ImGuiP.GetCurrentWindow().DC.CurrentColumns;
+			ImGuiOldColumnFlags? flags = current == null ? null : current->Flags;
 			provider.Columns(1);
 			provider.EndWindow();
 			provider.EndFrame();
