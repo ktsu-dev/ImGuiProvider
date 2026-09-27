@@ -87,7 +87,7 @@ public sealed class HexaNetImGuiProviderTests
 		uint[] colours = ImageVertexColoursAfter(provider => provider.Image(1, new Vector2(32, 32)));
 
 		Assert.IsNotEmpty(colours);
-		Assert.IsTrue(colours.All(colour => colour == ImGui.ColorConvertFloat4ToU32(Vector4.One)));
+		Assert.IsTrue(Array.TrueForAll(colours, colour => colour == ImGui.ColorConvertFloat4ToU32(Vector4.One)));
 	}
 
 	[TestMethod]
@@ -99,7 +99,7 @@ public sealed class HexaNetImGuiProviderTests
 		uint[] colours = ImageVertexColoursAfter(provider => provider.Image(1, new Vector2(32, 32), tintCol: red));
 
 		Assert.IsNotEmpty(colours);
-		Assert.IsTrue(colours.All(colour => colour == ImGui.ColorConvertFloat4ToU32(red)));
+		Assert.IsTrue(Array.TrueForAll(colours, colour => colour == ImGui.ColorConvertFloat4ToU32(red)));
 	}
 
 	[TestMethod]
@@ -112,7 +112,7 @@ public sealed class HexaNetImGuiProviderTests
 			provider.Image(1, new Vector2(32, 32), new Vector2(0.25f, 0.25f), new Vector2(0.75f, 0.75f), red));
 
 		Assert.IsNotEmpty(colours);
-		Assert.IsTrue(colours.All(colour => colour == ImGui.ColorConvertFloat4ToU32(red)));
+		Assert.IsTrue(Array.TrueForAll(colours, colour => colour == ImGui.ColorConvertFloat4ToU32(red)));
 	}
 
 	[TestMethod]
