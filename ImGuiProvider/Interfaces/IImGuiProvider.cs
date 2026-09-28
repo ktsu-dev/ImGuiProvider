@@ -346,7 +346,7 @@ public interface IImGuiProvider : IDisposable
 	/// <param name="uv0">UV coordinate for top-left</param>
 	/// <param name="uv1">UV coordinate for bottom-right</param>
 	/// <param name="tintCol">Tint color</param>
-	/// <param name="borderCol">Border color</param>
+	/// <param name="borderCol">Border color. A one-pixel border is drawn when its alpha is above zero.</param>
 	public void Image(nint textureId, Vector2 imageSize, Vector2 uv0 = default, Vector2 uv1 = default, Vector4 tintCol = default, Vector4 borderCol = default);
 
 	/// <summary>

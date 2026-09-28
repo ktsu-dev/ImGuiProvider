@@ -218,14 +218,24 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 		// Create ImTextureRef from nint via ImTextureID
 		ImTextureRef textureRef = new(texData: null, texId: (ImTextureID)textureId);
 
-		// Use appropriate overload based on provided parameters
-		if (uv0 != default || uv1 != Vector2.One)
+		// ImGui 1.92 dropped the per-call border colour: a border is now drawn from the style's
+		// ImageBorderSize in the Border colour. Push both so borderCol keeps its old meaning, a
+		// one-pixel frame drawn only when the colour is visible.
+		bool drawBorder = borderCol.W > 0f;
+		if (drawBorder)
 		{
-			ImGui.Image(textureRef, imageSize, uv0, uv1);
+			ImGui.PushStyleVar(ImGuiStyleVar.ImageBorderSize, 1f);
+			ImGui.PushStyleColor(ImGuiCol.Border, borderCol);
 		}
-		else
+
+		// Image has no tint parameter any more; ImageWithBg with a transparent background is the
+		// overload that carries one.
+		ImGui.ImageWithBg(textureRef, imageSize, uv0, uv1, Vector4.Zero, tintCol);
+
+		if (drawBorder)
 		{
-			ImGui.Image(textureRef, imageSize);
+			ImGui.PopStyleColor();
+			ImGui.PopStyleVar();
 		}
 	}
 
