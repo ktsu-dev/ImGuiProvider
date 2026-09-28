@@ -1,3 +1,9 @@
+## v1.3.1-pre.1 (prerelease)
+
+Changes since v1.3.0:
+
+- Bump Polyfill from 11.4.0 to 11.4.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+
 ## v1.3.0 (minor)
 
 Changes since v1.2.0:
@@ -23,8 +29,10 @@ Changes since v1.1.0:
 - docs: correct README, DESCRIPTION and TAGS metadata ([@matt-edmondson](https://github.com/matt-edmondson))
 - Stop Update SDKs failing when there is nothing to update ([@matt-edmondson](https://github.com/matt-edmondson))
 - Fix ktsu.Sdk 2.26+ analyzer errors: add InternalsVisibleTo for test project (KTSU0002), PrivateAssets="all" on Polyfill (KTSU0007) [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 - Sync .editorconfig ([@KtsuTools](https://github.com/KtsuTools))
 - Sync global.json ([@KtsuTools](https://github.com/KtsuTools))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 - chore: update ktsu.Sdk to 2.21.1 [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
 
 ## v1.1.36 (patch)
@@ -154,8 +162,10 @@ Changes since v1.1.16:
 Changes since v1.1.15:
 
 - Fix ktsu.Sdk 2.26+ analyzer errors: add InternalsVisibleTo for test project (KTSU0002), PrivateAssets="all" on Polyfill (KTSU0007) [patch] ([@matt-edmondson](https://github.com/matt-edmondson))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 - Sync .editorconfig ([@KtsuTools](https://github.com/KtsuTools))
 - Sync global.json ([@KtsuTools](https://github.com/KtsuTools))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 
 ## v1.1.15 (patch)
 
@@ -262,6 +272,7 @@ Changes since v1.0.0:
 - chore: remove unused SourceLink package versions ([@matt-edmondson](https://github.com/matt-edmondson))
 - chore: remove SourceLink package references from ImGuiProvider ([@matt-edmondson](https://github.com/matt-edmondson))
 - Add TAGS.md with NuGet package tags ([@matt-edmondson](https://github.com/matt-edmondson))
+- Sync .github\workflows\dotnet.yml ([@KtsuTools](https://github.com/KtsuTools))
 - Remove legacy build scripts ([@matt-edmondson](https://github.com/matt-edmondson))
 - docs: update documentation for clarity and add testing instructions ([@matt-edmondson](https://github.com/matt-edmondson))
 - chore: add API compat suppression file for Polyfill multi-targeting ([@matt-edmondson](https://github.com/matt-edmondson))
@@ -272,6 +283,7 @@ Changes since v1.0.0:
 - chore: remove unused package versions from Directory.Packages.props ([@matt-edmondson](https://github.com/matt-edmondson))
 - fix: use standard ktsu.Sdk pattern in csproj to fix build ([@matt-edmondson](https://github.com/matt-edmondson))
 - Add CLAUDE.md for project guidance and architecture overview ([@matt-edmondson](https://github.com/matt-edmondson))
+- Remove .github\workflows\project.yml ([@matt-edmondson](https://github.com/matt-edmondson))
 
 ## v1.0.6-pre.1 (prerelease)
 
@@ -291,7 +303,11 @@ Changes since v1.0.4:
 
 ## v1.0.5-pre.1 (prerelease)
 
-No significant changes detected since v1.0.5.
+Changes since v1.0.4:
+
+- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
+- Sync .github\workflows\dotnet.yml ([@ktsu[bot]](https://github.com/ktsu[bot]))
 
 ## v1.0.4 (patch)
 
@@ -325,6 +341,7 @@ Changes since v1.0.0:
 - chore: remove unused package versions from Directory.Packages.props ([@matt-edmondson](https://github.com/matt-edmondson))
 - fix: use standard ktsu.Sdk pattern in csproj to fix build ([@matt-edmondson](https://github.com/matt-edmondson))
 - Add CLAUDE.md for project guidance and architecture overview ([@matt-edmondson](https://github.com/matt-edmondson))
+- Remove .github\workflows\project.yml ([@matt-edmondson](https://github.com/matt-edmondson))
 
 ## v1.0.0 (major)
 
