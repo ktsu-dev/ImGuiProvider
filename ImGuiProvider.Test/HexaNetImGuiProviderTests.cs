@@ -174,6 +174,80 @@ public sealed class HexaNetImGuiProviderTests
 			typeof(IImGuiProvider).GetMethod(method)!.GetParameters().Last().ParameterType);
 	}
 
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public unsafe void AddFontFromMemoryTTF_PassesGlyphRangesThrough()
+	{
+		byte[] ttf = Convert.FromBase64String(GlyphRangeTestFont);
+		uint[] ranges = [0x0020, 0x0041, 0];
+
+		AssertGlyphRangesReachTheAtlas(ranges, (provider, glyphRanges) =>
+		{
+			// The atlas owns and frees the font data, so it has to come from ImGui's allocator.
+			byte* data = (byte*)ImGui.MemAlloc((nuint)ttf.Length);
+			ttf.CopyTo(new Span<byte>(data, ttf.Length));
+			return provider.AddFontFromMemoryTTF(data, ttf.Length, 16f, glyphRanges: glyphRanges);
+		});
+	}
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public unsafe void AddFontFromFileTTF_PassesGlyphRangesThrough()
+	{
+		string path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.ttf");
+		File.WriteAllBytes(path, Convert.FromBase64String(GlyphRangeTestFont));
+		try
+		{
+			uint[] ranges = [0x0020, 0x0041, 0];
+
+			AssertGlyphRangesReachTheAtlas(ranges, (provider, glyphRanges) =>
+				provider.AddFontFromFileTTF(path, 16f, glyphRanges: glyphRanges));
+		}
+		finally
+		{
+			File.Delete(path);
+		}
+	}
+
+	/// <summary>
+	/// A 680-byte TrueType font holding only <c>.notdef</c>, space and <c>A</c>, generated for these tests.
+	/// </summary>
+	private const string GlyphRangeTestFont =
+		"AAEAAAAKAIAAAwAgT1MvMkT/RP0AAAEoAAAAYGNtYXAAdABcAAABkAAAADxnbHlmTjxOOgAAAdQAAAA0aGVhZC8zHsIAAACsAAAANmhoZWEFegH2AAAA5AAAACRobXR4AlgAyAAAAYgAAAAIbG9jYQANACcAAAHMAAAACG1heHAABQAGAAABCAAAACBuYW1lPKGBaQAAAggAAAB1cG9zdAAIACQAAAKAAAAAKAABAAAAAQAAlrguml8PPPUAAwPoAAAAAObibZMAAAAA5uJtkwBkAAAB9AK8AAAAAwACAAAAAAAAAAEAAAMg/zgAAAJYAGQAZAH0AAEAAAAAAAAAAAAAAAAAAAABAAEAAAADAAQAAQAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAwJYAZAABQAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAPz8/PwAAACAAQQMgAAAAAAMgAMgAAAAAAAAAAAAAAAAAAAAgAAACWABkAAAAZAAAAAIAAAADAAAAFAADAAEAAAAUAAQAKAAAAAYABAABAAIAIABB//8AAAAgAEH////h/8EAAQAAAAAAAAAAAA0ADQAaAAEAZAAAAfQCvAADAAAzESERZAGQArz9RAAAAQBkAAAB9AK8AAMAADMRIRFkAZACvP1EAAAAAAQANgABAAAAAAABAA4AAAABAAAAAAACAAcADgADAAEECQABABwAFQADAAEECQACAA4AMUdseXBoUmFuZ2VUZXN0UmVndWxhcgBHAGwAeQBwAGgAUgBhAG4AZwBlAFQAZQBzAHQAUgBlAGcAdQBsAGEAcgAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAADACQ=";
+
+	private unsafe delegate nint AddFont(HexaNetImGuiProvider provider, uint* glyphRanges);
+
+	/// <summary>
+	/// Adds a font with <paramref name="ranges"/> and asserts the atlas holds the caller's buffer
+	/// and reads the same 32-bit code points back from it.
+	/// </summary>
+	private static unsafe void AssertGlyphRangesReachTheAtlas(uint[] ranges, AddFont addFont)
+	{
+		using HexaNetImGuiProvider provider = new();
+		nint context = provider.CreateContext();
+		fixed (uint* glyphRanges = ranges)
+		{
+			try
+			{
+				provider.SetCurrentContext(context);
+
+				ImFontPtr font = new((ImFont*)addFont(provider, glyphRanges));
+				Assert.IsFalse(font.IsNull, "The font was not added");
+
+				uint* stored = font.Sources[0].GlyphRanges;
+				Assert.AreEqual((nint)glyphRanges, (nint)stored);
+				for (int i = 0; i < ranges.Length; i++)
+				{
+					Assert.AreEqual(ranges[i], stored[i], $"Glyph range entry {i}");
+				}
+			}
+			finally
+			{
+				provider.DestroyContext(context);
+			}
+		}
+	}
+
 	private static Type GlyphRangesElementType(System.Reflection.MethodInfo method)
 	{
 		System.Reflection.ParameterInfo parameter = method.GetParameters().Single(p => p.Name == "glyphRanges");
