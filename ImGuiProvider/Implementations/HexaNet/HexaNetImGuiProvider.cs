@@ -615,20 +615,20 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 	}
 
 	/// <inheritdoc />
-	public nint AddFontFromFileTTF(string filename, float sizePixels, nint fontCfg = 0, ushort* glyphRanges = null)
+	public nint AddFontFromFileTTF(string filename, float sizePixels, nint fontCfg = 0, uint* glyphRanges = null)
 	{
 		ImFontAtlasPtr atlas = ImGui.GetIO().Fonts;
 		ImFontConfigPtr config = fontCfg != 0 ? new((ImFontConfig*)fontCfg) : new();
-		ImFontPtr font = atlas.AddFontFromFileTTF(filename, sizePixels, config, (uint*)glyphRanges);
+		ImFontPtr font = atlas.AddFontFromFileTTF(filename, sizePixels, config, glyphRanges);
 		return (nint)font.Handle;
 	}
 
 	/// <inheritdoc />
-	public nint AddFontFromMemoryTTF(byte* fontData, int fontDataSize, float sizePixels, nint fontCfg = 0, ushort* glyphRanges = null)
+	public nint AddFontFromMemoryTTF(byte* fontData, int fontDataSize, float sizePixels, nint fontCfg = 0, uint* glyphRanges = null)
 	{
 		ImFontAtlasPtr atlas = ImGui.GetIO().Fonts;
 		ImFontConfigPtr config = fontCfg != 0 ? new((ImFontConfig*)fontCfg) : new();
-		ImFontPtr font = atlas.AddFontFromMemoryTTF(fontData, fontDataSize, sizePixels, config, (uint*)glyphRanges);
+		ImFontPtr font = atlas.AddFontFromMemoryTTF(fontData, fontDataSize, sizePixels, config, glyphRanges);
 		return (nint)font.Handle;
 	}
 

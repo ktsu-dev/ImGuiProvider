@@ -2068,9 +2068,9 @@ public interface IImGuiProvider : IDisposable
 	/// <param name="filename">Font file path</param>
 	/// <param name="sizePixels">Font size in pixels</param>
 	/// <param name="fontCfg">Font configuration pointer (optional)</param>
-	/// <param name="glyphRanges">Glyph ranges pointer (optional)</param>
+	/// <param name="glyphRanges">Glyph ranges pointer (optional): zero-terminated pairs of 32-bit ImWchar code points, which must stay valid until the atlas is built</param>
 	/// <returns>Font pointer</returns>
-	public unsafe nint AddFontFromFileTTF(string filename, float sizePixels, nint fontCfg = 0, ushort* glyphRanges = null);
+	public unsafe nint AddFontFromFileTTF(string filename, float sizePixels, nint fontCfg = 0, uint* glyphRanges = null);
 
 	/// <summary>
 	/// Add font from memory to atlas
@@ -2079,9 +2079,9 @@ public interface IImGuiProvider : IDisposable
 	/// <param name="fontDataSize">Font data size</param>
 	/// <param name="sizePixels">Font size in pixels</param>
 	/// <param name="fontCfg">Font configuration pointer (optional)</param>
-	/// <param name="glyphRanges">Glyph ranges pointer (optional)</param>
+	/// <param name="glyphRanges">Glyph ranges pointer (optional): zero-terminated pairs of 32-bit ImWchar code points, which must stay valid until the atlas is built</param>
 	/// <returns>Font pointer</returns>
-	public unsafe nint AddFontFromMemoryTTF(byte* fontData, int fontDataSize, float sizePixels, nint fontCfg = 0, ushort* glyphRanges = null);
+	public unsafe nint AddFontFromMemoryTTF(byte* fontData, int fontDataSize, float sizePixels, nint fontCfg = 0, uint* glyphRanges = null);
 
 	/// <summary>
 	/// Add default font to atlas
