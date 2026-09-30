@@ -5,6 +5,7 @@ namespace ImGuiProvider.Test;
 using System.Numerics;
 using Hexa.NET.ImGui;
 using ImGuiProvider.Implementations.HexaNet;
+using ImGuiProvider.Interfaces;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 /// <summary>
@@ -144,6 +145,40 @@ public sealed class HexaNetImGuiProviderTests
 		Assert.IsTrue(lastBorderVertex >= 0);
 		Assert.IsTrue(colours.Skip(lastBorderVertex + 1).Any());
 		Assert.IsFalse(colours.Skip(lastBorderVertex + 1).Contains(border));
+	}
+
+	/// <summary>
+	/// Native ImGui reads glyph ranges as <c>ImWchar</c>, which the Hexa binding builds 32 bits wide.
+	/// A provider parameter of a narrower element type can only be passed on by reinterpreting the
+	/// pointer, so native code reads each pair of 16-bit entries as one code point and runs past the
+	/// end of the caller's buffer looking for the terminator.
+	/// </summary>
+	[TestMethod]
+	[DataRow(nameof(IImGuiProvider.AddFontFromFileTTF))]
+	[DataRow(nameof(IImGuiProvider.AddFontFromMemoryTTF))]
+	public void AddFont_GlyphRangesMatchNativeImWcharWidth(string method)
+	{
+		Type provided = GlyphRangesElementType(typeof(IImGuiProvider).GetMethod(method)!);
+
+		Type[] native = [.. typeof(ImFontAtlasPtr).GetMethods()
+			.Where(m => m.Name == method)
+			.Select(m => m.GetParameters().LastOrDefault())
+			.Where(p => p is { Name: "glyphRanges" } && p.ParameterType.IsPointer)
+			.Select(p => p!.ParameterType.GetElementType()!)
+			.Distinct()];
+
+		Assert.HasCount(1, native, $"Hexa's {method} overloads disagree on the glyph range type");
+		Assert.AreEqual(native[0], provided, $"{method} glyph ranges must use the native ImWchar width");
+		Assert.AreEqual(
+			typeof(HexaNetImGuiProvider).GetMethod(method)!.GetParameters().Last().ParameterType,
+			typeof(IImGuiProvider).GetMethod(method)!.GetParameters().Last().ParameterType);
+	}
+
+	private static Type GlyphRangesElementType(System.Reflection.MethodInfo method)
+	{
+		System.Reflection.ParameterInfo parameter = method.GetParameters().Single(p => p.Name == "glyphRanges");
+		Assert.IsTrue(parameter.ParameterType.IsPointer, $"{method.Name}: glyphRanges is not a pointer");
+		return parameter.ParameterType.GetElementType()!;
 	}
 
 	/// <summary>
