@@ -1,4 +1,6 @@
-## v2.0.0
+## v2.0.1-pre.1 (prerelease)
 
-No significant changes detected since v2.0.0.
+Changes since v2.0.0:
+
+- Bump Polyfill from 11.4.1 to 11.4.3 ([@dependabot[bot]](https://github.com/dependabot[bot]))
 
