@@ -256,6 +256,126 @@ public sealed class HexaNetImGuiProviderTests
 	}
 
 	/// <summary>
+	/// Text containing <c>%</c> conversions, a literal <c>%%</c>, and a run of <c>%s</c> that reads
+	/// pointers from varargs that were never passed when treated as a format.
+	/// </summary>
+	public static IEnumerable<object[]> PercentTexts =>
+	[
+		["Progress: 50%d done"],
+		["100%% sure"],
+		["%s%s%s%s%s%s%s%s"],
+	];
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	[DynamicData(nameof(PercentTexts))]
+	public void Text_DrawsPercentVerbatim(string text) =>
+		AssertDrawnVerbatim(text, (provider, t) => provider.Text(t));
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	[DynamicData(nameof(PercentTexts))]
+	public void TextColored_DrawsPercentVerbatim(string text) =>
+		AssertDrawnVerbatim(text, (provider, t) => provider.TextColored(Vector4.One, t));
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	[DynamicData(nameof(PercentTexts))]
+	public void TextDisabled_DrawsPercentVerbatim(string text) =>
+		AssertDrawnVerbatim(text, (provider, t) => provider.TextDisabled(t));
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	[DynamicData(nameof(PercentTexts))]
+	public void TextWrapped_DrawsPercentVerbatim(string text) =>
+		AssertDrawnVerbatim(text, (provider, t) => provider.TextWrapped(t));
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	[DynamicData(nameof(PercentTexts))]
+	public void BulletText_DrawsPercentVerbatim(string text) =>
+		AssertDrawnVerbatim(text, (provider, t) => provider.BulletText(t));
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	[DynamicData(nameof(PercentTexts))]
+	public void LabelText_DrawsPercentVerbatim(string text) =>
+		AssertDrawnVerbatim(text, (provider, t) => provider.LabelText("label", t));
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	[DynamicData(nameof(PercentTexts))]
+	public void SetTooltip_DrawsPercentVerbatim(string text) =>
+		AssertDrawnVerbatim(text, (provider, t) => provider.SetTooltip(t));
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	[DynamicData(nameof(PercentTexts))]
+	public void TreeNode_DrawsPercentVerbatim(string text) =>
+		AssertDrawnVerbatim(text, (provider, t) =>
+		{
+			if (provider.TreeNode("node", t))
+			{
+				provider.TreePop();
+			}
+		});
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	[DynamicData(nameof(PercentTexts))]
+	public void TreeNodeExtended_DrawsPercentVerbatim(string text) =>
+		AssertDrawnVerbatim(text, (provider, t) =>
+		{
+			if (provider.TreeNodeExtended("node", 0, t))
+			{
+				provider.TreePop();
+			}
+		});
+
+	/// <summary>
+	/// Asserts that <paramref name="draw"/> draws <paramref name="text"/> with as many glyphs as a
+	/// placeholder of the same shape, which holds only when every <c>%</c> is drawn as itself rather
+	/// than expanded, collapsed or crashed on as a printf conversion.
+	/// </summary>
+	private static void AssertDrawnVerbatim(string text, Action<HexaNetImGuiProvider, string> draw)
+	{
+		string placeholder = new([.. text.Select(c => char.IsWhiteSpace(c) ? c : 'x')]);
+
+		Assert.AreEqual(
+			RenderedVertexCount(provider => draw(provider, placeholder)),
+			RenderedVertexCount(provider => draw(provider, text)));
+	}
+
+	/// <summary>
+	/// Runs one frame inside a window and returns how many vertices the whole frame rendered.
+	/// </summary>
+	private static int RenderedVertexCount(Action<HexaNetImGuiProvider> draw)
+	{
+		using HexaNetImGuiProvider provider = new();
+		nint context = provider.CreateContext();
+		try
+		{
+			provider.SetCurrentContext(context);
+			ImGuiIOPtr io = ImGui.GetIO();
+			io.DisplaySize = new Vector2(800, 600);
+			io.DeltaTime = 1f / 60f;
+			io.BackendFlags |= ImGuiBackendFlags.RendererHasTextures;
+
+			provider.NewFrame();
+			provider.Begin("window");
+			draw(provider);
+			provider.EndWindow();
+			ImGui.Render();
+
+			return ImGui.GetDrawData().TotalVtxCount;
+		}
+		finally
+		{
+			provider.DestroyContext(context);
+		}
+	}
+
+	/// <summary>
 	/// Runs one frame and returns the colours of the vertices <paramref name="draw"/> added to the window.
 	/// </summary>
 	private static unsafe uint[] ImageVertexColoursAfter(Action<HexaNetImGuiProvider> draw)
