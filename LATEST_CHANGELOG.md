@@ -1,6 +1,6 @@
-## v2.0.1-pre.2 (prerelease)
+## v2.0.1 (patch)
 
-Changes since v2.0.1-pre.1:
+Changes since v2.0.0:
 
-- Bump MSTest.Sdk from 4.4.1 to 4.5.1 ([@dependabot[bot]](https://github.com/dependabot[bot]))
+- [patch] Draw provider text verbatim instead of as a printf format ([@Claude](https://github.com/Claude))
 
