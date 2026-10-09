@@ -142,24 +142,31 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 	/// <inheritdoc />
 	public void ShowUserGuide() => ImGui.ShowUserGuide();
 
+	/// <summary>
+	/// Escapes <c>%</c> so text passed to one of cimgui's printf-style entry points is drawn verbatim.
+	/// The provider's text methods take no format arguments, so an unescaped <c>%</c> would make
+	/// cimgui's <c>vsnprintf</c> read varargs that were never passed.
+	/// </summary>
+	private static string EscapeFormat(string? text) => text?.Replace("%", "%%", StringComparison.Ordinal) ?? string.Empty;
+
 	// Basic Widgets - Text
 	/// <inheritdoc />
-	public void Text(string text) => ImGui.Text(text);
+	public void Text(string text) => ImGui.TextUnformatted(text);
 
 	/// <inheritdoc />
-	public void TextColored(Vector4 color, string text) => ImGui.TextColored(color, text);
+	public void TextColored(Vector4 color, string text) => ImGui.TextColored(color, EscapeFormat(text));
 
 	/// <inheritdoc />
-	public void TextDisabled(string text) => ImGui.TextDisabled(text);
+	public void TextDisabled(string text) => ImGui.TextDisabled(EscapeFormat(text));
 
 	/// <inheritdoc />
-	public void TextWrapped(string text) => ImGui.TextWrapped(text);
+	public void TextWrapped(string text) => ImGui.TextWrapped(EscapeFormat(text));
 
 	/// <inheritdoc />
-	public void BulletText(string text) => ImGui.BulletText(text);
+	public void BulletText(string text) => ImGui.BulletText(EscapeFormat(text));
 
 	/// <inheritdoc />
-	public void LabelText(string label, string text) => ImGui.LabelText(label, text);
+	public void LabelText(string label, string text) => ImGui.LabelText(label, EscapeFormat(text));
 
 	// Basic Widgets - Buttons
 	/// <inheritdoc />
@@ -412,10 +419,10 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 	public bool TreeNode(string label) => ImGui.TreeNode(label);
 
 	/// <inheritdoc />
-	public bool TreeNode(string strId, string fmt) => ImGui.TreeNode(strId, fmt);
+	public bool TreeNode(string strId, string fmt) => ImGui.TreeNode(strId, EscapeFormat(fmt));
 
 	/// <inheritdoc />
-	public bool TreeNode(void* ptrId, string fmt) => ImGui.TreeNode(ptrId, fmt);
+	public bool TreeNode(void* ptrId, string fmt) => ImGui.TreeNode(ptrId, EscapeFormat(fmt));
 
 	/// <inheritdoc />
 	public bool TreeNodeExtended(string label, int flags = 0) =>
@@ -423,11 +430,11 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 
 	/// <inheritdoc />
 	public bool TreeNodeExtended(string strId, int flags, string fmt) =>
-		ImGui.TreeNodeEx(strId, (ImGuiTreeNodeFlags)flags, fmt);
+		ImGui.TreeNodeEx(strId, (ImGuiTreeNodeFlags)flags, EscapeFormat(fmt));
 
 	/// <inheritdoc />
 	public bool TreeNodeExtended(void* ptrId, int flags, string fmt) =>
-		ImGui.TreeNodeEx(ptrId, (ImGuiTreeNodeFlags)flags, fmt);
+		ImGui.TreeNodeEx(ptrId, (ImGuiTreeNodeFlags)flags, EscapeFormat(fmt));
 
 	/// <inheritdoc />
 	public void TreePop() => ImGui.TreePop();
@@ -501,7 +508,7 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 	public void EndTooltip() => ImGui.EndTooltip();
 
 	/// <inheritdoc />
-	public void SetTooltip(string text) => ImGui.SetTooltip(text);
+	public void SetTooltip(string text) => ImGui.SetTooltip(EscapeFormat(text));
 
 	// Popups, Modals
 	/// <inheritdoc />

@@ -850,7 +850,7 @@ public interface IImGuiProvider : IDisposable
 	/// Begin a tree node with string ID
 	/// </summary>
 	/// <param name="strId">String ID</param>
-	/// <param name="fmt">Format string</param>
+	/// <param name="fmt">Label text, drawn verbatim (a <c>%</c> is not a format specifier)</param>
 	/// <returns>True if tree node is open</returns>
 	public bool TreeNode(string strId, string fmt);
 
@@ -858,7 +858,7 @@ public interface IImGuiProvider : IDisposable
 	/// Begin a tree node with pointer ID
 	/// </summary>
 	/// <param name="ptrId">Pointer ID</param>
-	/// <param name="fmt">Format string</param>
+	/// <param name="fmt">Label text, drawn verbatim (a <c>%</c> is not a format specifier)</param>
 	/// <returns>True if tree node is open</returns>
 	public unsafe bool TreeNode(void* ptrId, string fmt);
 
@@ -1936,7 +1936,7 @@ public interface IImGuiProvider : IDisposable
 	/// </summary>
 	/// <param name="strId">String ID</param>
 	/// <param name="flags">Tree node flags</param>
-	/// <param name="fmt">Format string</param>
+	/// <param name="fmt">Label text, drawn verbatim (a <c>%</c> is not a format specifier)</param>
 	/// <returns>True if tree node is open</returns>
 	public bool TreeNodeExtended(string strId, int flags, string fmt);
 
@@ -1945,7 +1945,7 @@ public interface IImGuiProvider : IDisposable
 	/// </summary>
 	/// <param name="ptrId">Pointer ID</param>
 	/// <param name="flags">Tree node flags</param>
-	/// <param name="fmt">Format string</param>
+	/// <param name="fmt">Label text, drawn verbatim (a <c>%</c> is not a format specifier)</param>
 	/// <returns>True if tree node is open</returns>
 	public unsafe bool TreeNodeExtended(void* ptrId, int flags, string fmt);
 
