@@ -1,6 +1,7 @@
-## v2.0.1 (patch)
+## v2.0.2-pre.1 (prerelease)
 
-Changes since v2.0.0:
+Changes since v2.0.1:
 
-- [patch] Draw provider text verbatim instead of as a printf format ([@Claude](https://github.com/Claude))
+- Bump Polyfill from 11.4.3 to 11.4.5 (dependabot[bot])
+- Bump the microsoft group with 2 updates (dependabot[bot])
 
