@@ -71,7 +71,7 @@ Implementations/HexaNet/HexaNetImGuiProvider.cs <- Hexa.NET.ImGui wrapper
 3. `InitializeBackends()` - initializes all backends
 4. `BeginFrame()` - sets context, calls `NewFrame()` on backends then provider
 5. `EndFrame()` - calls `Render()`, gets draw data, renders via backends, updates platform windows
-6. `Dispose()` - shuts down backends, destroys context, disposes provider
+6. `Dispose()` - shuts down backends and destroys the native context. It does not dispose the provider or the backends: the provider is a singleton shared by every context, and the container owns both
 
 ### Unsafe Code
 
