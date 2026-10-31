@@ -2,8 +2,10 @@
 
 namespace ImGuiProvider.Test;
 
+using ImGuiProvider.Extensions;
 using ImGuiProvider.Interfaces;
 using ImGuiProvider.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 
@@ -224,7 +226,7 @@ public class ImGuiContextTests
 	}
 
 	[TestMethod]
-	public void Dispose_ShutsDownAndDisposesBackends()
+	public void Dispose_ShutsDownBackendsWithoutDisposingWhatItDoesNotOwn()
 	{
 		nint fakeContext = 0x1234;
 		_mockProvider.Setup(p => p.CreateContext()).Returns(fakeContext);
@@ -236,9 +238,52 @@ public class ImGuiContextTests
 		context.Dispose();
 
 		mockBackend.Verify(b => b.Shutdown(), Times.Once);
-		mockBackend.Verify(b => b.Dispose(), Times.Once);
+		mockBackend.Verify(b => b.Dispose(), Times.Never);
 		_mockProvider.Verify(p => p.DestroyContext(fakeContext), Times.Once);
+		_mockProvider.Verify(p => p.Dispose(), Times.Never);
+	}
+
+	[TestMethod]
+	public void Dispose_OfOneContextLeavesTheSharedProviderToTheContainer()
+	{
+		_mockProvider.Setup(p => p.CreateContext()).Returns(0x1234);
+		ServiceCollection services = new();
+		services.AddImGui(_ => _mockProvider.Object);
+
+		using (ServiceProvider container = services.BuildServiceProvider())
+		{
+			ImGuiContext first = container.GetRequiredService<ImGuiContext>();
+			ImGuiContext second = container.GetRequiredService<ImGuiContext>();
+			Assert.AreNotSame(first, second);
+
+			first.Initialize();
+			first.Dispose();
+
+			_mockProvider.Verify(p => p.Dispose(), Times.Never);
+		}
+
 		_mockProvider.Verify(p => p.Dispose(), Times.Once);
+	}
+
+	[TestMethod]
+	public void Dispose_OfTheContainerDisposesEachBackendOnce()
+	{
+		Mock<IImGuiBackend> mockBackend = new();
+		ServiceCollection services = new();
+		services.AddImGui(_ => _mockProvider.Object);
+		services.AddTransient(_ => mockBackend.Object);
+
+		using (ServiceProvider container = services.BuildServiceProvider())
+		{
+			ImGuiContext context = container.GetRequiredService<ImGuiContext>();
+			context.AddBackend(container.GetRequiredService<IImGuiBackend>());
+			context.Dispose();
+
+			mockBackend.Verify(b => b.Shutdown(), Times.Once);
+			mockBackend.Verify(b => b.Dispose(), Times.Never);
+		}
+
+		mockBackend.Verify(b => b.Dispose(), Times.Once);
 	}
 
 	[TestMethod]
@@ -253,7 +298,7 @@ public class ImGuiContextTests
 		context.Dispose();
 
 		_mockProvider.Verify(p => p.DestroyContext(fakeContext), Times.Once);
-		_mockProvider.Verify(p => p.Dispose(), Times.Once);
+		_mockProvider.Verify(p => p.Dispose(), Times.Never);
 	}
 
 	[TestMethod]
