@@ -2097,7 +2097,8 @@ public interface IImGuiProvider : IDisposable
 	public bool BuildFontAtlas();
 
 	/// <summary>
-	/// Push font onto stack
+	/// Push font onto stack, drawing it at the size it was loaded with.
+	/// Pushing a null font keeps the current font and size.
 	/// </summary>
 	/// <param name="font">Font pointer</param>
 	public void PushFont(nint font);
