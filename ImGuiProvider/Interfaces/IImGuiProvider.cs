@@ -2075,10 +2075,10 @@ public interface IImGuiProvider : IDisposable
 	/// <summary>
 	/// Add font from memory to atlas
 	/// </summary>
-	/// <param name="fontData">Font data buffer</param>
-	/// <param name="fontDataSize">Font data size</param>
+	/// <param name="fontData">Font data buffer. It is copied: the caller keeps ownership and only has to keep it valid for the duration of this call, so a <c>fixed</c>-pinned managed array is fine. The atlas owns and frees its copy.</param>
+	/// <param name="fontDataSize">Font data size in bytes</param>
 	/// <param name="sizePixels">Font size in pixels</param>
-	/// <param name="fontCfg">Font configuration pointer (optional)</param>
+	/// <param name="fontCfg">Font configuration pointer (optional). It is copied, not modified; its <c>FontDataOwnedByAtlas</c> is ignored because the atlas always owns the copy it is given.</param>
 	/// <param name="glyphRanges">Glyph ranges pointer (optional): zero-terminated pairs of 32-bit ImWchar code points, which must stay valid until the atlas is built</param>
 	/// <returns>Font pointer</returns>
 	public unsafe nint AddFontFromMemoryTTF(byte* fontData, int fontDataSize, float sizePixels, nint fontCfg = 0, uint* glyphRanges = null);

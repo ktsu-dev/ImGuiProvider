@@ -16,4 +16,8 @@
   <ItemGroup>
     <PackageReference Include="Moq" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Fonts\ProggyClean.ttf" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

@@ -631,11 +631,34 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 	}
 
 	/// <inheritdoc />
+	/// <remarks>
+	/// ImGui frees font data it owns with its own allocator when the atlas is destroyed, and its
+	/// default config claims ownership of whatever it is given. Handing it the caller's buffer
+	/// therefore made it free GC memory, and read that memory after the caller unpinned it. The
+	/// atlas is given a copy in ImGui's allocator instead, always marked as atlas-owned, so the
+	/// caller's buffer only has to live for this call. The caller's config is copied, not modified.
+	/// </remarks>
 	public nint AddFontFromMemoryTTF(byte* fontData, int fontDataSize, float sizePixels, nint fontCfg = 0, uint* glyphRanges = null)
 	{
 		ImFontAtlasPtr atlas = ImGui.GetIO().Fonts;
-		ImFontConfigPtr config = fontCfg != 0 ? new((ImFontConfig*)fontCfg) : new();
-		ImFontPtr font = atlas.AddFontFromMemoryTTF(fontData, fontDataSize, sizePixels, config, glyphRanges);
+
+		ImFontConfig config;
+		if (fontCfg != 0)
+		{
+			config = *(ImFontConfig*)fontCfg;
+		}
+		else
+		{
+			ImFontConfigPtr defaults = ImGui.ImFontConfig();
+			config = *defaults.Handle;
+			defaults.Destroy();
+		}
+
+		void* atlasCopy = ImGui.MemAlloc((nuint)fontDataSize);
+		Buffer.MemoryCopy(fontData, atlasCopy, fontDataSize, fontDataSize);
+		config.FontDataOwnedByAtlas = 1;
+
+		ImFontPtr font = atlas.AddFontFromMemoryTTF(atlasCopy, fontDataSize, sizePixels, &config, glyphRanges);
 		return (nint)font.Handle;
 	}
 
