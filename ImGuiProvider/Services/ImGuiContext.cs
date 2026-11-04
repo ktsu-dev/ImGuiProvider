@@ -7,8 +7,15 @@ using ImGuiProvider.Interfaces;
 /// <summary>
 /// Manages ImGui context lifecycle and provides high-level operations
 /// </summary>
+/// <remarks>
+/// The context owns only the native ImGui context it creates. It does not own the
+/// <see cref="IImGuiProvider"/> it is given or the backends added to it: the provider is shared by
+/// every context resolved from one container, and both are disposed by whoever created them, which
+/// is the DI container when they come from <c>AddImGui</c> and <c>AddImGuiBackend</c>.
+/// </remarks>
 public class ImGuiContext(IImGuiProvider provider) : IDisposable
 {
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The provider is shared by every context and owned by whoever created it, usually the DI container")]
 	private readonly IImGuiProvider _provider = Ensure.NotNull(provider);
 	private readonly List<IImGuiBackend> _backends = [];
 	private bool _disposed;
@@ -141,7 +148,10 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 		_provider.RenderPlatformWindowsDefault();
 	}
 
-	/// <inheritdoc />
+	/// <summary>
+	/// Shuts down the attached backends and destroys the native ImGui context. The provider and
+	/// the backends are not disposed; their owner disposes them.
+	/// </summary>
 	public void Dispose()
 	{
 		Dispose(disposing: true);
@@ -155,23 +165,23 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 		{
 			if (disposing)
 			{
-				// Shutdown all backends
+				// Detach the backends. They are not disposed: their owner, usually the DI container,
+				// disposes them, and disposing them here as well disposed each one twice.
 				foreach (IImGuiBackend backend in _backends)
 				{
 					backend.Shutdown();
-					backend.Dispose();
 				}
 				_backends.Clear();
 
-				// Destroy context
+				// Destroy the native context, which is the only thing this object created
 				if (Context != nint.Zero)
 				{
 					_provider.DestroyContext(Context);
 					Context = nint.Zero;
 				}
 
-				// Dispose provider
-				_provider.Dispose();
+				// The provider is not disposed: it is shared by every context resolved from one
+				// container, so disposing it here broke every other live context.
 			}
 
 			_disposed = true;

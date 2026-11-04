@@ -62,6 +62,8 @@ while (running)
     context.EndFrame();
 }
 
+// Shuts down the backends and destroys the ImGui context. The provider and the backends
+// belong to the container, which disposes them when it is disposed.
 context.Dispose();
 ```
 
