@@ -35,6 +35,83 @@ public sealed class HexaNetImGuiProviderTests
 		}
 	}
 
+	/// <summary>
+	/// The natural .NET call: a managed <c>byte[]</c> pinned only for the call. The atlas must not
+	/// keep pointing at that buffer, and must not free it when the context is destroyed: before
+	/// ktsu-dev/ImGuiProvider#63 the default config let ImGui take ownership of GC memory, so it read
+	/// the buffer after it was unpinned and the process aborted with <c>free(): invalid pointer</c>
+	/// on <see cref="IImGuiProvider.DestroyContext"/>.
+	/// </summary>
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void AddFontFromMemoryTTF_DefaultConfig_CopiesTheCallersBuffer() =>
+		AssertFontDataIsAtlasOwnedCopy(fontCfg: 0);
+
+	/// <summary>
+	/// The same contract holds when the caller supplies a config, whatever that config says about
+	/// ownership: the caller's buffer only has to live for the call.
+	/// </summary>
+	/// <param name="ownedByAtlas">The caller's <see cref="ImFontConfig.FontDataOwnedByAtlas"/>.</param>
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	[DataRow(true)]
+	[DataRow(false)]
+	public unsafe void AddFontFromMemoryTTF_CallerConfig_CopiesTheCallersBuffer(bool ownedByAtlas)
+	{
+		ImFontConfigPtr config = ImGui.ImFontConfig();
+		try
+		{
+			config.FontDataOwnedByAtlas = ownedByAtlas;
+			AssertFontDataIsAtlasOwnedCopy((nint)config.Handle);
+			Assert.AreEqual(ownedByAtlas, config.FontDataOwnedByAtlas, "The caller's config was modified.");
+		}
+		finally
+		{
+			config.Destroy();
+		}
+	}
+
+	private static unsafe void AssertFontDataIsAtlasOwnedCopy(nint fontCfg)
+	{
+		byte[] ttf = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Fonts", "ProggyClean.ttf"));
+		byte[] original = (byte[])ttf.Clone();
+
+		using HexaNetImGuiProvider provider = new();
+		nint context = provider.CreateContext();
+		try
+		{
+			provider.SetCurrentContext(context);
+
+			nint font;
+			nint callerAddress;
+			fixed (byte* data = ttf)
+			{
+				callerAddress = (nint)data;
+				font = provider.AddFontFromMemoryTTF(data, ttf.Length, 13f, fontCfg);
+			}
+
+			Assert.AreNotEqual(0, font, "The font was not added.");
+
+			// Once the call returns the caller is free to reuse its buffer.
+			Array.Clear(ttf);
+
+			ImFontAtlasPtr atlas = ImGui.GetIO().Fonts;
+			ImFontConfig source = atlas.Sources[atlas.Sources.Size - 1];
+
+			Assert.AreNotEqual(callerAddress, (nint)source.FontData, "The atlas kept a pointer into the caller's buffer.");
+			Assert.AreNotEqual(0, source.FontDataOwnedByAtlas, "The atlas does not own the copy it was given.");
+			Assert.AreEqual(original.Length, source.FontDataSize);
+			Assert.IsTrue(
+				new ReadOnlySpan<byte>(source.FontData, source.FontDataSize).SequenceEqual(original),
+				"The atlas copy does not hold the caller's font data.");
+		}
+		finally
+		{
+			// Before the fix this freed GC memory and aborted the test host.
+			provider.DestroyContext(context);
+		}
+	}
+
 	[TestMethod]
 	[Timeout(30000, CooperativeCancellation = true)]
 	public void Columns_DefaultFlags_DrawsBorders() =>
