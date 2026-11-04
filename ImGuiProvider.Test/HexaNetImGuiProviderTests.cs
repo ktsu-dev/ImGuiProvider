@@ -332,6 +332,46 @@ public sealed class HexaNetImGuiProviderTests
 			}
 		});
 
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public unsafe void PushFont_DrawsThePushedFontAtItsOwnSize()
+	{
+		using HexaNetImGuiProvider provider = new();
+		nint context = provider.CreateContext();
+		ImFontConfigPtr bigConfig = ImGui.ImFontConfig();
+		try
+		{
+			provider.SetCurrentContext(context);
+			ImGuiIOPtr io = ImGui.GetIO();
+			io.DisplaySize = new Vector2(800, 600);
+			io.DeltaTime = 1f / 60f;
+			io.BackendFlags |= ImGuiBackendFlags.RendererHasTextures;
+
+			provider.AddFontDefault();
+			bigConfig.SizePixels = 30f;
+			nint big = provider.AddFontDefault((nint)bigConfig.Handle);
+
+			provider.NewFrame();
+			provider.Begin("window");
+			Assert.AreEqual(13f, ImGui.GetFontSize());
+
+			provider.PushFont(big);
+			Assert.AreEqual(30f, ImGui.GetFontSize());
+			Assert.AreEqual(30f, provider.GetTextLineHeight());
+
+			provider.PopFont();
+			Assert.AreEqual(13f, ImGui.GetFontSize());
+
+			provider.EndWindow();
+			ImGui.Render();
+		}
+		finally
+		{
+			bigConfig.Destroy();
+			provider.DestroyContext(context);
+		}
+	}
+
 	/// <summary>
 	/// Asserts that <paramref name="draw"/> draws <paramref name="text"/> with as many glyphs as a
 	/// placeholder of the same shape, which holds only when every <c>%</c> is drawn as itself rather

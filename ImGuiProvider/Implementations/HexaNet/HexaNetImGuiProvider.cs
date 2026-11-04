@@ -659,8 +659,10 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 	/// <inheritdoc />
 	public void PushFont(nint font)
 	{
-		ImFontPtr fontPtr = new((ImFont*)font);
-		ImGui.PushFont(fontPtr, 0.0f); // Use 0 for automatic font scaling
+		// Since ImGui 1.92 a size of 0 keeps the current font size. Pass the font's own loaded size,
+		// as ImGui's obsolete one-argument PushFont did, so a 24px font pushed over a 13px one draws at 24px.
+		ImFont* f = (ImFont*)font;
+		ImGui.PushFont(new ImFontPtr(f), f == null ? 0.0f : f->LegacySize);
 	}
 
 	/// <inheritdoc />
