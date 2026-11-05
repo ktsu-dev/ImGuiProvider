@@ -59,9 +59,9 @@ public static class ServiceCollectionExtensions
 	// Backend extension methods can be added here when specific backend implementations are available
 
 	/// <summary>
-	/// Adds a custom backend. The backend can be resolved as <typeparamref name="TBackend"/>, as
+	/// Adds a custom backend as a singleton. The backend can be resolved as <typeparamref name="TBackend"/>, as
 	/// <see cref="IImGuiBackend"/>, and as <see cref="IPlatformBackend"/> and/or <see cref="IRendererBackend"/>
-	/// when it implements them.
+	/// when it implements them, and every one of those resolves to the same instance.
 	/// </summary>
 	/// <typeparam name="TBackend">The backend implementation type</typeparam>
 	/// <param name="services">The service collection</param>
@@ -69,16 +69,17 @@ public static class ServiceCollectionExtensions
 	public static IServiceCollection AddImGuiBackend<TBackend>(this IServiceCollection services)
 		where TBackend : class, IImGuiBackend
 	{
-		services.AddTransient<TBackend>();
+		services.AddSingleton<TBackend>();
 		AddBackendForwards<TBackend>(services);
 
 		return services;
 	}
 
 	/// <summary>
-	/// Adds a custom backend with factory. The backend can be resolved as <typeparamref name="TBackend"/>, as
-	/// <see cref="IImGuiBackend"/>, and as <see cref="IPlatformBackend"/> and/or <see cref="IRendererBackend"/>
-	/// when <typeparamref name="TBackend"/> implements them.
+	/// Adds a custom backend with factory, as a singleton: the factory runs once per container. The backend
+	/// can be resolved as <typeparamref name="TBackend"/>, as <see cref="IImGuiBackend"/>, and as
+	/// <see cref="IPlatformBackend"/> and/or <see cref="IRendererBackend"/> when <typeparamref name="TBackend"/>
+	/// implements them, and every one of those resolves to the same instance.
 	/// </summary>
 	/// <typeparam name="TBackend">The backend interface type</typeparam>
 	/// <param name="services">The service collection</param>
@@ -89,7 +90,7 @@ public static class ServiceCollectionExtensions
 		Func<IServiceProvider, TBackend> factory)
 		where TBackend : class, IImGuiBackend
 	{
-		services.AddTransient(factory);
+		services.AddSingleton(factory);
 		AddBackendForwards<TBackend>(services);
 
 		return services;
@@ -99,23 +100,26 @@ public static class ServiceCollectionExtensions
 	/// Forwards each backend interface that <typeparamref name="TBackend"/> implements to the
 	/// <typeparamref name="TBackend"/> registration. An interface that is <typeparamref name="TBackend"/>
 	/// itself is already registered, and forwarding it to itself would recurse on resolution.
+	/// A backend is stateful (a native window, a graphics device, ImGui's backend user data), and the
+	/// context initializes only the instances it is given, so every forward must resolve the one
+	/// <typeparamref name="TBackend"/> instance rather than build another.
 	/// </summary>
 	private static void AddBackendForwards<TBackend>(IServiceCollection services)
 		where TBackend : class, IImGuiBackend
 	{
 		if (typeof(TBackend) != typeof(IImGuiBackend))
 		{
-			services.AddTransient<IImGuiBackend>(serviceProvider => serviceProvider.GetRequiredService<TBackend>());
+			services.AddSingleton<IImGuiBackend>(serviceProvider => serviceProvider.GetRequiredService<TBackend>());
 		}
 
 		if (typeof(TBackend) != typeof(IPlatformBackend) && typeof(IPlatformBackend).IsAssignableFrom(typeof(TBackend)))
 		{
-			services.AddTransient(serviceProvider => (IPlatformBackend)serviceProvider.GetRequiredService<TBackend>());
+			services.AddSingleton(serviceProvider => (IPlatformBackend)serviceProvider.GetRequiredService<TBackend>());
 		}
 
 		if (typeof(TBackend) != typeof(IRendererBackend) && typeof(IRendererBackend).IsAssignableFrom(typeof(TBackend)))
 		{
-			services.AddTransient(serviceProvider => (IRendererBackend)serviceProvider.GetRequiredService<TBackend>());
+			services.AddSingleton(serviceProvider => (IRendererBackend)serviceProvider.GetRequiredService<TBackend>());
 		}
 	}
 }
