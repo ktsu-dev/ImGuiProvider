@@ -49,7 +49,9 @@ services.AddImGuiBackend<MyRendererBackend>();
 var serviceProvider = services.BuildServiceProvider();
 var context = serviceProvider.GetRequiredService<ImGuiContext>();
 
-// Resolve and attach backends
+// Resolve and attach backends. Each backend is a singleton: resolving it again, or under another
+// of its service types, returns the same instance, so a backend that is both platform and renderer
+// is one object that is initialized once.
 var platformBackend = serviceProvider.GetRequiredService<IPlatformBackend>();
 var rendererBackend = serviceProvider.GetRequiredService<IRendererBackend>();
 
