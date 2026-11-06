@@ -158,72 +158,6 @@ public sealed class HexaNetImGuiProviderTests
 			provider.Columns("c", 1);
 		}));
 
-	[TestMethod]
-	[Timeout(30000, CooperativeCancellation = true)]
-	public void Image_WithoutTint_DrawsUntinted()
-	{
-		uint[] colours = ImageVertexColoursAfter(provider => provider.Image(1, new Vector2(32, 32)));
-
-		Assert.IsNotEmpty(colours);
-		Assert.IsTrue(Array.TrueForAll(colours, colour => colour == ImGui.ColorConvertFloat4ToU32(Vector4.One)));
-	}
-
-	[TestMethod]
-	[Timeout(30000, CooperativeCancellation = true)]
-	public void Image_WithTint_DrawsTinted()
-	{
-		Vector4 red = new(1, 0, 0, 1);
-
-		uint[] colours = ImageVertexColoursAfter(provider => provider.Image(1, new Vector2(32, 32), tintCol: red));
-
-		Assert.IsNotEmpty(colours);
-		Assert.IsTrue(Array.TrueForAll(colours, colour => colour == ImGui.ColorConvertFloat4ToU32(red)));
-	}
-
-	[TestMethod]
-	[Timeout(30000, CooperativeCancellation = true)]
-	public void Image_WithTintAndUvs_DrawsTinted()
-	{
-		Vector4 red = new(1, 0, 0, 1);
-
-		uint[] colours = ImageVertexColoursAfter(provider =>
-			provider.Image(1, new Vector2(32, 32), new Vector2(0.25f, 0.25f), new Vector2(0.75f, 0.75f), red));
-
-		Assert.IsNotEmpty(colours);
-		Assert.IsTrue(Array.TrueForAll(colours, colour => colour == ImGui.ColorConvertFloat4ToU32(red)));
-	}
-
-	[TestMethod]
-	[Timeout(30000, CooperativeCancellation = true)]
-	public void Image_WithBorderColour_DrawsABorderInThatColour()
-	{
-		Vector4 green = new(0, 1, 0, 1);
-
-		uint[] colours = ImageVertexColoursAfter(provider => provider.Image(1, new Vector2(32, 32), borderCol: green));
-
-		Assert.Contains(ImGui.ColorConvertFloat4ToU32(green), colours);
-	}
-
-	[TestMethod]
-	[Timeout(30000, CooperativeCancellation = true)]
-	public void Image_WithBorderColour_RestoresTheStyle()
-	{
-		Vector4 green = new(0, 1, 0, 1);
-		uint border = ImGui.ColorConvertFloat4ToU32(green);
-
-		uint[] colours = ImageVertexColoursAfter(provider =>
-		{
-			provider.Image(1, new Vector2(32, 32), borderCol: green);
-			provider.Image(1, new Vector2(32, 32));
-		});
-
-		// The second image is drawn after the first one's border, so none of its vertices can be green.
-		int lastBorderVertex = Array.LastIndexOf(colours, border);
-		Assert.IsTrue(lastBorderVertex >= 0);
-		Assert.IsTrue(colours.Skip(lastBorderVertex + 1).Any());
-		Assert.IsFalse(colours.Skip(lastBorderVertex + 1).Contains(border));
-	}
-
 	/// <summary>
 	/// Without a size the bar fills the available width, as native <c>ImGui::ProgressBar</c> does.
 	/// Before ktsu-dev/ImGuiProvider#70 the provider passed (0, 0), which is the default item width.
@@ -306,6 +240,72 @@ public sealed class HexaNetImGuiProviderTests
 		{
 			provider.DestroyContext(context);
 		}
+	}
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void Image_WithoutTint_DrawsUntinted()
+	{
+		uint[] colours = ImageVertexColoursAfter(provider => provider.Image(1, new Vector2(32, 32)));
+
+		Assert.IsNotEmpty(colours);
+		Assert.IsTrue(Array.TrueForAll(colours, colour => colour == ImGui.ColorConvertFloat4ToU32(Vector4.One)));
+	}
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void Image_WithTint_DrawsTinted()
+	{
+		Vector4 red = new(1, 0, 0, 1);
+
+		uint[] colours = ImageVertexColoursAfter(provider => provider.Image(1, new Vector2(32, 32), tintCol: red));
+
+		Assert.IsNotEmpty(colours);
+		Assert.IsTrue(Array.TrueForAll(colours, colour => colour == ImGui.ColorConvertFloat4ToU32(red)));
+	}
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void Image_WithTintAndUvs_DrawsTinted()
+	{
+		Vector4 red = new(1, 0, 0, 1);
+
+		uint[] colours = ImageVertexColoursAfter(provider =>
+			provider.Image(1, new Vector2(32, 32), new Vector2(0.25f, 0.25f), new Vector2(0.75f, 0.75f), red));
+
+		Assert.IsNotEmpty(colours);
+		Assert.IsTrue(Array.TrueForAll(colours, colour => colour == ImGui.ColorConvertFloat4ToU32(red)));
+	}
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void Image_WithBorderColour_DrawsABorderInThatColour()
+	{
+		Vector4 green = new(0, 1, 0, 1);
+
+		uint[] colours = ImageVertexColoursAfter(provider => provider.Image(1, new Vector2(32, 32), borderCol: green));
+
+		Assert.Contains(ImGui.ColorConvertFloat4ToU32(green), colours);
+	}
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void Image_WithBorderColour_RestoresTheStyle()
+	{
+		Vector4 green = new(0, 1, 0, 1);
+		uint border = ImGui.ColorConvertFloat4ToU32(green);
+
+		uint[] colours = ImageVertexColoursAfter(provider =>
+		{
+			provider.Image(1, new Vector2(32, 32), borderCol: green);
+			provider.Image(1, new Vector2(32, 32));
+		});
+
+		// The second image is drawn after the first one's border, so none of its vertices can be green.
+		int lastBorderVertex = Array.LastIndexOf(colours, border);
+		Assert.IsTrue(lastBorderVertex >= 0);
+		Assert.IsTrue(colours.Skip(lastBorderVertex + 1).Any());
+		Assert.IsFalse(colours.Skip(lastBorderVertex + 1).Contains(border));
 	}
 
 	/// <summary>
