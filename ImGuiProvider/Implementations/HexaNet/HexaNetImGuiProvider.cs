@@ -672,11 +672,18 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 	}
 
 	/// <inheritdoc />
+	/// <remarks>
+	/// ImGui only builds the atlas lazily when the renderer sets
+	/// <see cref="ImGuiBackendFlags.RendererHasTextures"/>. Every other backend needs it built
+	/// before the first frame, and Hexa.NET.ImGui no longer ships the obsolete <c>Build()</c>, so
+	/// this builds it with <see cref="ImGuiP.ImFontAtlasBuildMain(ImFontAtlasPtr)"/> and reports
+	/// whether the atlas texture now exists.
+	/// </remarks>
 	public bool BuildFontAtlas()
 	{
 		ImFontAtlasPtr atlas = ImGui.GetIO().Fonts;
-		// Build is handled internally, return true for success
-		return true;
+		ImGuiP.ImFontAtlasBuildMain(atlas);
+		return atlas.TexIsBuilt;
 	}
 
 	/// <inheritdoc />

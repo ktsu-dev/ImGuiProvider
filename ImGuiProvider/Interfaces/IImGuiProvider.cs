@@ -2091,9 +2091,10 @@ public interface IImGuiProvider : IDisposable
 	public nint AddFontDefault(nint fontCfg = 0);
 
 	/// <summary>
-	/// Build font atlas
+	/// Build font atlas. A backend that does not set <c>ImGuiBackendFlags.RendererHasTextures</c>
+	/// must call this after adding its fonts and before the first frame.
 	/// </summary>
-	/// <returns>True if successful</returns>
+	/// <returns>True if the atlas texture was built</returns>
 	public bool BuildFontAtlas();
 
 	/// <summary>
