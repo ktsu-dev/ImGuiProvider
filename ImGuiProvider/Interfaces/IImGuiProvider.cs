@@ -2051,9 +2051,11 @@ public interface IImGuiProvider : IDisposable
 
 	// Font Management
 	/// <summary>
-	/// Get the default font
+	/// Get the default font: <c>io.FontDefault</c>, or the first font added to the atlas when that is
+	/// unset. It does not change inside a <see cref="PushFont"/> scope, and is available before the
+	/// first frame.
 	/// </summary>
-	/// <returns>Default font pointer</returns>
+	/// <returns>Default font pointer, or zero when no font has been added</returns>
 	public nint GetDefaultFont();
 
 	/// <summary>
