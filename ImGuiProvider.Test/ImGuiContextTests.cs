@@ -335,7 +335,7 @@ public class ImGuiContextTests
 
 		contextA.Dispose();
 
-		CollectionAssert.AreEqual(new List<nint> { a }, currentAtShutdown, "A's backend shut down against another context.");
+		Assert.AreSequenceEqual(new List<nint> { a }, currentAtShutdown, "A's backend shut down against another context.");
 		Assert.AreEqual(b, current, "B is no longer current after disposing A.");
 		_mockProvider.Verify(p => p.DestroyContext(a), Times.Once);
 	}

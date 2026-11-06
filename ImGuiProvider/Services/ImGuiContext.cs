@@ -165,43 +165,52 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 		{
 			if (disposing)
 			{
-				// Backends shut down through the current ImGui context, like BeginFrame and EndFrame
-				// talk to it, so make this one current first. Otherwise disposing this context while
-				// another one on the shared provider is current tore down that one's backend state.
-				nint previous = nint.Zero;
-				if (Context != nint.Zero)
-				{
-					previous = _provider.GetCurrentContext();
-					_provider.SetCurrentContext(Context);
-				}
-
-				// Detach the backends. They are not disposed: their owner, usually the DI container,
-				// disposes them, and disposing them here as well disposed each one twice.
-				foreach (IImGuiBackend backend in _backends)
-				{
-					backend.Shutdown();
-				}
-				_backends.Clear();
-
-				// Destroy the native context, which is the only thing this object created
-				if (Context != nint.Zero)
-				{
-					nint destroyed = Context;
-					_provider.DestroyContext(destroyed);
-					Context = nint.Zero;
-
-					// Leave whichever other context was current still current.
-					if (previous != nint.Zero && previous != destroyed)
-					{
-						_provider.SetCurrentContext(previous);
-					}
-				}
-
-				// The provider is not disposed: it is shared by every context resolved from one
-				// container, so disposing it here broke every other live context.
+				ShutdownBackendsAndDestroyContext();
 			}
 
 			_disposed = true;
+		}
+	}
+
+	/// <summary>
+	/// Shuts the backends down and destroys the native context, with this context current.
+	/// Backends shut down through the current ImGui context, like BeginFrame and EndFrame talk to
+	/// it, so disposing this context while another one on the shared provider was current used to
+	/// tear down that one's backend state. Whichever other context was current is current again
+	/// afterwards.
+	/// </summary>
+	private void ShutdownBackendsAndDestroyContext()
+	{
+		nint destroyed = Context;
+		nint previous = nint.Zero;
+		if (destroyed != nint.Zero)
+		{
+			previous = _provider.GetCurrentContext();
+			_provider.SetCurrentContext(destroyed);
+		}
+
+		// Detach the backends. They are not disposed: their owner, usually the DI container,
+		// disposes them, and disposing them here as well disposed each one twice.
+		foreach (IImGuiBackend backend in _backends)
+		{
+			backend.Shutdown();
+		}
+		_backends.Clear();
+
+		if (destroyed == nint.Zero)
+		{
+			return;
+		}
+
+		// Destroy the native context, which is the only thing this object created. The provider
+		// is not disposed: it is shared by every context resolved from one container, so
+		// disposing it here broke every other live context.
+		_provider.DestroyContext(destroyed);
+		Context = nint.Zero;
+
+		if (previous != nint.Zero && previous != destroyed)
+		{
+			_provider.SetCurrentContext(previous);
 		}
 	}
 }
