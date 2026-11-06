@@ -286,7 +286,11 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 	public void EndCombo() => ImGui.EndCombo();
 
 	/// <inheritdoc />
-	public bool Combo(string label, ref int currentItem, string[] items, int popupMaxHeightInItems = -1) => ImGui.Combo(label, ref currentItem, items, popupMaxHeightInItems);
+	public bool Combo(string label, ref int currentItem, string[] items, int popupMaxHeightInItems = -1)
+	{
+		Ensure.NotNull(items);
+		return ImGui.Combo(label, ref currentItem, items, items.Length, popupMaxHeightInItems);
+	}
 
 	// Input Text
 	/// <inheritdoc />
@@ -466,7 +470,11 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 	public void EndListBox() => ImGui.EndListBox();
 
 	/// <inheritdoc />
-	public bool ListBox(string label, ref int currentItem, string[] items, int heightInItems = -1) => ImGui.ListBox(label, ref currentItem, items, heightInItems);
+	public bool ListBox(string label, ref int currentItem, string[] items, int heightInItems = -1)
+	{
+		Ensure.NotNull(items);
+		return ImGui.ListBox(label, ref currentItem, items, items.Length, heightInItems);
+	}
 
 	// Plot/Graph widgets (simple versions)
 	/// <inheritdoc />
