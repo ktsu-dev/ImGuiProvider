@@ -301,6 +301,71 @@ public class ImGuiContextTests
 		_mockProvider.Verify(p => p.Dispose(), Times.Never);
 	}
 
+	/// <summary>
+	/// Two contexts on one shared provider, as with two windows. Before ktsu-dev/ImGuiProvider#71
+	/// disposing A shut A's backends down while B was current, so they tore down B's backend state.
+	/// </summary>
+	[TestMethod]
+	public void Dispose_ShutsBackendsDownWithItsOwnContextCurrent_AndLeavesTheOtherCurrent()
+	{
+		nint a = 0x1000;
+		nint b = 0x2000;
+		nint current = nint.Zero;
+		_mockProvider.SetupSequence(p => p.CreateContext()).Returns(a).Returns(b);
+		_mockProvider.Setup(p => p.GetCurrentContext()).Returns(() => current);
+		_mockProvider.Setup(p => p.SetCurrentContext(It.IsAny<nint>())).Callback<nint>(c => current = c);
+		_mockProvider.Setup(p => p.DestroyContext(It.IsAny<nint>())).Callback<nint>(c =>
+		{
+			if (current == c)
+			{
+				current = nint.Zero;
+			}
+		});
+
+		List<nint> currentAtShutdown = [];
+		Mock<IImGuiBackend> backendOfA = new();
+		backendOfA.Setup(x => x.Shutdown()).Callback(() => currentAtShutdown.Add(current));
+
+		ImGuiContext contextA = new(_mockProvider.Object);
+		using ImGuiContext contextB = new(_mockProvider.Object);
+		contextA.Initialize();
+		contextA.AddBackend(backendOfA.Object);
+		contextB.Initialize();
+		Assert.AreEqual(b, current);
+
+		contextA.Dispose();
+
+		Assert.AreSequenceEqual(new List<nint> { a }, currentAtShutdown, "A's backend shut down against another context.");
+		Assert.AreEqual(b, current, "B is no longer current after disposing A.");
+		_mockProvider.Verify(p => p.DestroyContext(a), Times.Once);
+	}
+
+	/// <summary>
+	/// Disposing the context that is already current leaves no context current, as destroying it does.
+	/// </summary>
+	[TestMethod]
+	public void Dispose_OfTheCurrentContext_DoesNotRestoreIt()
+	{
+		nint a = 0x1000;
+		nint current = nint.Zero;
+		_mockProvider.Setup(p => p.CreateContext()).Returns(a);
+		_mockProvider.Setup(p => p.GetCurrentContext()).Returns(() => current);
+		_mockProvider.Setup(p => p.SetCurrentContext(It.IsAny<nint>())).Callback<nint>(c => current = c);
+		_mockProvider.Setup(p => p.DestroyContext(It.IsAny<nint>())).Callback<nint>(c =>
+		{
+			if (current == c)
+			{
+				current = nint.Zero;
+			}
+		});
+
+		ImGuiContext context = new(_mockProvider.Object);
+		context.Initialize();
+		context.Dispose();
+
+		Assert.AreEqual(nint.Zero, current);
+	}
+
 	[TestMethod]
 	public void RemoveBackend_RemovesFromList()
 	{
