@@ -225,6 +225,90 @@ public sealed class HexaNetImGuiProviderTests
 	}
 
 	/// <summary>
+	/// Without a size the bar fills the available width, as native <c>ImGui::ProgressBar</c> does.
+	/// Before ktsu-dev/ImGuiProvider#70 the provider passed (0, 0), which is the default item width.
+	/// </summary>
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void ProgressBar_WithoutSize_FillsTheAvailableWidth()
+	{
+		(float actual, float expected) = ProgressBarWidth(
+			provider => provider.ProgressBar(0.5f),
+			() => ImGui.GetContentRegionAvail().X);
+
+		Assert.AreEqual(expected, actual);
+	}
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void ProgressBar_WithoutSize_WithOverlay_FillsTheAvailableWidth()
+	{
+		(float actual, float expected) = ProgressBarWidth(
+			provider => provider.ProgressBar(0.5f, overlay: "half"),
+			() => ImGui.GetContentRegionAvail().X);
+
+		Assert.AreEqual(expected, actual);
+	}
+
+	/// <summary>
+	/// An explicit zero width still means the default item width.
+	/// </summary>
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void ProgressBar_WithZeroSize_TakesTheItemWidth()
+	{
+		(float actual, float expected) = ProgressBarWidth(
+			provider => provider.ProgressBar(0.5f, Vector2.Zero),
+			ImGui.CalcItemWidth);
+
+		Assert.AreEqual(expected, actual);
+	}
+
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void ProgressBar_WithSize_TakesThatWidth()
+	{
+		(float actual, float expected) = ProgressBarWidth(
+			provider => provider.ProgressBar(0.5f, new Vector2(123, 0)),
+			() => 123f);
+
+		Assert.AreEqual(expected, actual);
+	}
+
+	/// <summary>
+	/// Draws a progress bar in a sized window and returns its width, with the width
+	/// <paramref name="expected"/> reads just before it is drawn.
+	/// </summary>
+	private static (float Actual, float Expected) ProgressBarWidth(Action<HexaNetImGuiProvider> draw, Func<float> expected)
+	{
+		using HexaNetImGuiProvider provider = new();
+		nint context = provider.CreateContext();
+		try
+		{
+			provider.SetCurrentContext(context);
+			ImGuiIOPtr io = ImGui.GetIO();
+			io.DisplaySize = new Vector2(800, 600);
+			io.DeltaTime = 1f / 60f;
+			io.BackendFlags |= ImGuiBackendFlags.RendererHasTextures;
+
+			provider.NewFrame();
+			ImGui.SetNextWindowSize(new Vector2(400, 300));
+			provider.Begin("window");
+			float expectedWidth = expected();
+			draw(provider);
+			float actualWidth = ImGui.GetItemRectSize().X;
+			provider.EndWindow();
+			provider.EndFrame();
+
+			return (actualWidth, expectedWidth);
+		}
+		finally
+		{
+			provider.DestroyContext(context);
+		}
+	}
+
+	/// <summary>
 	/// Native ImGui reads glyph ranges as <c>ImWchar</c>, which the Hexa binding builds 32 bits wide.
 	/// A provider parameter of a narrower element type can only be passed on by reinterpreting the
 	/// pointer, so native code reads each pair of 16-bit entries as one code point and runs past the
