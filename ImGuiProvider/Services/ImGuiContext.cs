@@ -34,8 +34,11 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	/// Initialize the ImGui context
 	/// </summary>
 	/// <returns>True if initialization was successful</returns>
+	/// <exception cref="ObjectDisposedException">The context has been disposed.</exception>
 	public bool Initialize()
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
 		if (Context != nint.Zero)
 		{
 			return true; // Already initialized
@@ -55,8 +58,11 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	/// Add a backend to this context
 	/// </summary>
 	/// <param name="backend">Backend to add</param>
+	/// <exception cref="ObjectDisposedException">The context has been disposed.</exception>
 	public void AddBackend(IImGuiBackend backend)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
 		Ensure.NotNull(backend);
 
 		_backends.Add(backend);
@@ -83,8 +89,11 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	/// Initialize all backends
 	/// </summary>
 	/// <returns>True if all backends initialized successfully</returns>
+	/// <exception cref="ObjectDisposedException">The context has been disposed.</exception>
 	public bool InitializeBackends()
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
 		foreach (IImGuiBackend backend in _backends)
 		{
 			if (Context != nint.Zero)
@@ -103,8 +112,11 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	/// <summary>
 	/// Begin a new ImGui frame
 	/// </summary>
+	/// <exception cref="ObjectDisposedException">The context has been disposed.</exception>
 	public void BeginFrame()
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
 		if (Context == nint.Zero)
 		{
 			throw new InvalidOperationException("Context not initialized");
@@ -125,8 +137,11 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	/// <summary>
 	/// End the current ImGui frame and render
 	/// </summary>
+	/// <exception cref="ObjectDisposedException">The context has been disposed.</exception>
 	public void EndFrame()
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
 		if (Context == nint.Zero)
 		{
 			throw new InvalidOperationException("Context not initialized");
