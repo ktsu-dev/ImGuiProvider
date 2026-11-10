@@ -319,6 +319,77 @@ public class ImGuiContextTests
 	}
 
 	[TestMethod]
+	public void RemoveBackend_ShutsDownAnInitializedBackendOnceWithTheContextCurrent()
+	{
+		nint fakeContext = 0x1234;
+		_mockProvider.Setup(p => p.CreateContext()).Returns(fakeContext);
+		Mock<IImGuiBackend> mockBackend = new();
+		mockBackend.Setup(b => b.Initialize()).Returns(true);
+
+		ImGuiContext context = new(_mockProvider.Object);
+		context.Initialize();
+		context.AddBackend(mockBackend.Object);
+		Assert.IsTrue(context.InitializeBackends());
+
+		_mockProvider.Invocations.Clear();
+		context.RemoveBackend(mockBackend.Object);
+
+		mockBackend.Verify(b => b.Shutdown(), Times.Once);
+		_mockProvider.Verify(p => p.SetCurrentContext(fakeContext), Times.Once);
+		mockBackend.Verify(b => b.Dispose(), Times.Never);
+
+		context.Dispose();
+
+		mockBackend.Verify(b => b.Shutdown(), Times.Once);
+		mockBackend.Verify(b => b.Dispose(), Times.Never);
+	}
+
+	[TestMethod]
+	public void RemoveBackend_DoesNotShutDownABackendThatNeverInitialized()
+	{
+		nint fakeContext = 0x1234;
+		_mockProvider.Setup(p => p.CreateContext()).Returns(fakeContext);
+		Mock<IImGuiBackend> mockBackend = new();
+
+		using ImGuiContext context = new(_mockProvider.Object);
+		context.Initialize();
+		context.AddBackend(mockBackend.Object);
+		context.RemoveBackend(mockBackend.Object);
+
+		mockBackend.Verify(b => b.Shutdown(), Times.Never);
+	}
+
+	[TestMethod]
+	public void RemoveBackend_DoesNotShutDownABackendWhoseInitializeFailed()
+	{
+		Mock<IImGuiBackend> mockBackend = new();
+		mockBackend.Setup(b => b.Initialize()).Returns(false);
+
+		using ImGuiContext context = new(_mockProvider.Object);
+		context.AddBackend(mockBackend.Object);
+		Assert.IsFalse(context.InitializeBackends());
+		context.RemoveBackend(mockBackend.Object);
+
+		mockBackend.Verify(b => b.Shutdown(), Times.Never);
+	}
+
+	[TestMethod]
+	public void RemoveBackend_OfABackendNotInTheContextDoesNothing()
+	{
+		Mock<IImGuiBackend> added = new();
+		added.Setup(b => b.Initialize()).Returns(true);
+		Mock<IImGuiBackend> stranger = new();
+
+		using ImGuiContext context = new(_mockProvider.Object);
+		context.AddBackend(added.Object);
+		context.InitializeBackends();
+		context.RemoveBackend(stranger.Object);
+
+		stranger.Verify(b => b.Shutdown(), Times.Never);
+		added.Verify(b => b.Shutdown(), Times.Never);
+	}
+
+	[TestMethod]
 	public void RemoveBackend_NullDoesNotThrow()
 	{
 		using ImGuiContext context = new(_mockProvider.Object);
