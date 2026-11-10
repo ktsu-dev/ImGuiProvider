@@ -18,6 +18,7 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The provider is shared by every context and owned by whoever created it, usually the DI container")]
 	private readonly IImGuiProvider _provider = Ensure.NotNull(provider);
 	private readonly List<IImGuiBackend> _backends = [];
+	private readonly HashSet<IImGuiBackend> _initializedBackends = new(ReferenceEqualityComparer.Instance);
 	private bool _disposed;
 
 	/// <summary>
@@ -68,14 +69,32 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	}
 
 	/// <summary>
-	/// Remove a backend from this context
+	/// Remove a backend from this context, shutting it down first if this context initialized it
 	/// </summary>
+	/// <remarks>
+	/// A backend that <see cref="InitializeBackends"/> initialized leaves state on the native
+	/// context, which Dear ImGui asserts is gone when the context is destroyed. Removing such a
+	/// backend therefore calls <see cref="IImGuiBackend.Shutdown"/> on it, with this context
+	/// current, so a later <see cref="Dispose()"/> or a replacement backend's initialization
+	/// does not fail. The backend is not disposed: its owner, usually the DI container, disposes it.
+	/// </remarks>
 	/// <param name="backend">Backend to remove</param>
 	public void RemoveBackend(IImGuiBackend backend)
 	{
-		if (backend != null)
+		if (backend == null || !_backends.Remove(backend))
 		{
-			_backends.Remove(backend);
+			return;
+		}
+
+		if (_initializedBackends.Remove(backend))
+		{
+			if (Context != nint.Zero)
+			{
+				_provider.SetCurrentContext(Context);
+				backend.SetCurrentContext(Context);
+			}
+
+			backend.Shutdown();
 		}
 	}
 
@@ -96,6 +115,8 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 			{
 				return false;
 			}
+
+			_initializedBackends.Add(backend);
 		}
 		return true;
 	}
@@ -172,6 +193,7 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 					backend.Shutdown();
 				}
 				_backends.Clear();
+				_initializedBackends.Clear();
 
 				// Destroy the native context, which is the only thing this object created
 				if (Context != nint.Zero)
