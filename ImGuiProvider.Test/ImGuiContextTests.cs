@@ -302,6 +302,48 @@ public class ImGuiContextTests
 	}
 
 	[TestMethod]
+	public void Initialize_AfterDisposeThrowsAndCreatesNoSecondContext()
+	{
+		_mockProvider.Setup(p => p.CreateContext()).Returns(0x1234);
+
+		ImGuiContext context = new(_mockProvider.Object);
+		context.Initialize();
+		context.Dispose();
+
+		Assert.ThrowsExactly<ObjectDisposedException>(() => context.Initialize());
+		_mockProvider.Verify(p => p.CreateContext(), Times.Once);
+		Assert.IsFalse(context.IsInitialized);
+	}
+
+	[TestMethod]
+	public void Initialize_AfterDisposeOfAnUninitializedContextThrows()
+	{
+		ImGuiContext context = new(_mockProvider.Object);
+		context.Dispose();
+
+		Assert.ThrowsExactly<ObjectDisposedException>(() => context.Initialize());
+		_mockProvider.Verify(p => p.CreateContext(), Times.Never);
+	}
+
+	[TestMethod]
+	public void LifecycleMethods_AfterDisposeThrowObjectDisposedException()
+	{
+		_mockProvider.Setup(p => p.CreateContext()).Returns(0x1234);
+		Mock<IImGuiBackend> backend = new();
+
+		ImGuiContext context = new(_mockProvider.Object);
+		context.Initialize();
+		context.Dispose();
+
+		Assert.ThrowsExactly<ObjectDisposedException>(() => context.AddBackend(backend.Object));
+		Assert.ThrowsExactly<ObjectDisposedException>(() => context.InitializeBackends());
+		Assert.ThrowsExactly<ObjectDisposedException>(context.BeginFrame);
+		Assert.ThrowsExactly<ObjectDisposedException>(context.EndFrame);
+		backend.Verify(b => b.SetCurrentContext(It.IsAny<nint>()), Times.Never);
+		backend.Verify(b => b.Initialize(), Times.Never);
+	}
+
+	[TestMethod]
 	public void RemoveBackend_RemovesFromList()
 	{
 		nint fakeContext = 0x1234;
