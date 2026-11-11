@@ -203,7 +203,8 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 
 	// Progress Bar
 	/// <inheritdoc />
-	public void ProgressBar(float fraction, Vector2 sizeArg = default, string? overlay = null) => ImGui.ProgressBar(fraction, sizeArg, overlay);
+	public void ProgressBar(float fraction, Vector2? sizeArg = null, string? overlay = null) =>
+		ImGui.ProgressBar(fraction, sizeArg ?? new Vector2(-float.Epsilon, 0), overlay);
 
 	/// <inheritdoc />
 	public void Bullet() => ImGui.Bullet();

@@ -328,9 +328,12 @@ public interface IImGuiProvider : IDisposable
 	/// Display a progress bar
 	/// </summary>
 	/// <param name="fraction">Progress fraction (0.0f to 1.0f)</param>
-	/// <param name="sizeArg">Progress bar size</param>
+	/// <param name="sizeArg">
+	/// Progress bar size. <see langword="null"/>, the default, fills the available width like native ImGui.
+	/// A width of 0 takes the default item width, and a negative width is measured from the right edge.
+	/// </param>
 	/// <param name="overlay">Overlay text</param>
-	public void ProgressBar(float fraction, Vector2 sizeArg = default, string? overlay = null);
+	public void ProgressBar(float fraction, Vector2? sizeArg = null, string? overlay = null);
 
 	/// <summary>
 	/// Display a bullet point
