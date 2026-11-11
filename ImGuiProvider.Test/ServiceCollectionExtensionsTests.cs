@@ -101,7 +101,7 @@ public class ServiceCollectionExtensionsTests
 		ServiceDescriptor? descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(MockBackend));
 		Assert.IsNotNull(descriptor);
 		Assert.AreEqual(typeof(MockBackend), descriptor.ImplementationType);
-		Assert.AreEqual(ServiceLifetime.Transient, descriptor.Lifetime);
+		Assert.AreEqual(ServiceLifetime.Singleton, descriptor.Lifetime);
 
 		using ServiceProvider provider = services.BuildServiceProvider();
 		Assert.IsInstanceOfType<MockBackend>(provider.GetRequiredService<IImGuiBackend>());
@@ -118,15 +118,70 @@ public class ServiceCollectionExtensionsTests
 
 		using ServiceProvider provider = services.BuildServiceProvider();
 
-		Assert.IsInstanceOfType<MockPlatformBackend>(provider.GetRequiredService<IPlatformBackend>());
-		Assert.IsInstanceOfType<MockRendererBackend>(provider.GetRequiredService<IRendererBackend>());
-		Assert.IsInstanceOfType<MockPlatformBackend>(provider.GetRequiredService<MockPlatformBackend>());
-		Assert.IsInstanceOfType<MockRendererBackend>(provider.GetRequiredService<MockRendererBackend>());
+		MockPlatformBackend platform = provider.GetRequiredService<MockPlatformBackend>();
+		MockRendererBackend renderer = provider.GetRequiredService<MockRendererBackend>();
+		Assert.AreSame(platform, provider.GetRequiredService<IPlatformBackend>());
+		Assert.AreSame(renderer, provider.GetRequiredService<IRendererBackend>());
 
 		IImGuiBackend[] all = [.. provider.GetServices<IImGuiBackend>()];
 		Assert.HasCount(2, all);
-		Assert.IsTrue(all.Any(b => b is MockPlatformBackend));
-		Assert.IsTrue(all.Any(b => b is MockRendererBackend));
+		Assert.IsTrue(all.Contains(platform));
+		Assert.IsTrue(all.Contains(renderer));
+	}
+
+	[TestMethod]
+	public void AddImGuiBackend_Generic_ResolvesOneBackendThatIsBothPlatformAndRendererUnderEveryServiceType()
+	{
+		ServiceCollection services = new();
+		services.AddImGuiBackend<MockPlatformAndRendererBackend>();
+
+		using ServiceProvider provider = services.BuildServiceProvider();
+
+		MockPlatformAndRendererBackend backend = provider.GetRequiredService<MockPlatformAndRendererBackend>();
+		Assert.AreSame(backend, provider.GetRequiredService<MockPlatformAndRendererBackend>());
+		Assert.AreSame(backend, provider.GetRequiredService<IPlatformBackend>());
+		Assert.AreSame(backend, provider.GetRequiredService<IPlatformBackend>());
+		Assert.AreSame(backend, provider.GetRequiredService<IRendererBackend>());
+		Assert.AreSame(backend, provider.GetRequiredService<IRendererBackend>());
+		Assert.AreSame(backend, provider.GetRequiredService<IImGuiBackend>());
+
+		IImGuiBackend[] all = [.. provider.GetServices<IImGuiBackend>()];
+		Assert.HasCount(1, all);
+		Assert.AreSame(backend, all[0]);
+		Assert.AreSame(backend, provider.GetServices<IImGuiBackend>().Single());
+	}
+
+	[TestMethod]
+	public void AddImGuiBackend_WithFactory_CallsTheFactoryOnceAndReturnsItsBackendUnderEveryServiceType()
+	{
+		int calls = 0;
+		ServiceCollection services = new();
+		services.AddImGuiBackend(_ =>
+		{
+			calls++;
+			return new MockPlatformAndRendererBackend();
+		});
+
+		using ServiceProvider provider = services.BuildServiceProvider();
+
+		MockPlatformAndRendererBackend backend = provider.GetRequiredService<MockPlatformAndRendererBackend>();
+		Assert.AreSame(backend, provider.GetRequiredService<MockPlatformAndRendererBackend>());
+		Assert.AreSame(backend, provider.GetRequiredService<IPlatformBackend>());
+		Assert.AreSame(backend, provider.GetRequiredService<IRendererBackend>());
+		Assert.AreSame(backend, provider.GetRequiredService<IImGuiBackend>());
+		Assert.AreSame(backend, provider.GetServices<IImGuiBackend>().Single());
+		Assert.AreEqual(1, calls);
+	}
+
+	[TestMethod]
+	public void AddImGuiBackend_RegistersEveryServiceTypeAsSingleton()
+	{
+		ServiceCollection services = new();
+		services.AddImGuiBackend<MockPlatformAndRendererBackend>();
+		services.AddImGuiBackend(_ => new MockBackend());
+
+		Assert.HasCount(6, services);
+		Assert.IsTrue(services.All(d => d.Lifetime == ServiceLifetime.Singleton));
 	}
 
 	[TestMethod]
@@ -205,6 +260,21 @@ public class ServiceCollectionExtensionsTests
 		public void RenderDrawData(nint drawData) { }
 		public void SetCurrentContext(nint context) { }
 		public void ProcessEvents() { }
+		public void Dispose() { }
+	}
+
+	[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes", Justification = "Instantiated by DI container")]
+	private sealed class MockPlatformAndRendererBackend : IPlatformBackend, IRendererBackend
+	{
+		public string Name => "MockPlatformAndRenderer";
+		public bool Initialize() => true;
+		public void Shutdown() { }
+		public void NewFrame() { }
+		public void RenderDrawData(nint drawData) { }
+		public void SetCurrentContext(nint context) { }
+		public void ProcessEvents() { }
+		public bool CreateDeviceObjects() => true;
+		public void InvalidateDeviceObjects() { }
 		public void Dispose() { }
 	}
 

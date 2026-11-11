@@ -61,7 +61,7 @@ Implementations/HexaNet/HexaNetImGuiProvider.cs <- Hexa.NET.ImGui wrapper
 
 ### DI Registration
 
-`ServiceCollectionExtensions.AddImGui()` registers `HexaNetImGuiProvider` as singleton `IImGuiProvider` and `ImGuiContext` as transient. Generic overloads (`AddImGui<TProvider>()`) and factory overloads allow custom providers. `AddImGuiBackend<T>()` registers backends.
+`ServiceCollectionExtensions.AddImGui()` registers `HexaNetImGuiProvider` as singleton `IImGuiProvider` and `ImGuiContext` as transient. Generic overloads (`AddImGui<TProvider>()`) and factory overloads allow custom providers. `AddImGuiBackend<T>()` (and its factory overload) registers a backend as a **singleton**, and forwards `IImGuiBackend`, plus `IPlatformBackend`/`IRendererBackend` when `T` implements them, to that one instance. A backend is stateful and the context initializes only the instances it is given, so a backend that is both platform and renderer must resolve to one object under every service type (#91). The container owns disposal and calls `Dispose` once per service type the backend was resolved as, so a backend's `Dispose` must tolerate repeated calls.
 
 ### Frame Lifecycle
 
