@@ -737,6 +737,57 @@ public sealed class HexaNetImGuiProviderTests
 	}
 
 	/// <summary>
+	/// A backend without <see cref="ImGuiBackendFlags.RendererHasTextures"/> has to build the atlas
+	/// before the first frame. Before ktsu-dev/ImGuiProvider#95 <see cref="IImGuiProvider.BuildFontAtlas"/>
+	/// returned true without building anything, and the next <see cref="IImGuiProvider.NewFrame"/>
+	/// aborted the process on ImGui's "font atlas is not built" assertion.
+	/// </summary>
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void BuildFontAtlas_WithoutRendererHasTextures_BuildsTheAtlas() =>
+		AssertBuildFontAtlasBuildsTheAtlas(ImGuiBackendFlags.None);
+
+	/// <summary>
+	/// Building up front is also harmless for a backend that lets ImGui build the atlas lazily.
+	/// </summary>
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void BuildFontAtlas_WithRendererHasTextures_BuildsTheAtlas() =>
+		AssertBuildFontAtlasBuildsTheAtlas(ImGuiBackendFlags.RendererHasTextures);
+
+	private static void AssertBuildFontAtlasBuildsTheAtlas(ImGuiBackendFlags backendFlags)
+	{
+		using HexaNetImGuiProvider provider = new();
+		nint context = provider.CreateContext();
+		try
+		{
+			provider.SetCurrentContext(context);
+			ImGuiIOPtr io = ImGui.GetIO();
+			io.DisplaySize = new Vector2(800, 600);
+			io.DeltaTime = 1f / 60f;
+			io.BackendFlags |= backendFlags;
+
+			provider.AddFontDefault();
+
+			Assert.IsTrue(provider.BuildFontAtlas(), "BuildFontAtlas reported failure.");
+
+			// Asserted before NewFrame: with an unbuilt atlas and no RendererHasTextures, NewFrame
+			// aborts the test host instead of failing the test.
+			Assert.IsTrue(io.Fonts.TexIsBuilt, "BuildFontAtlas returned true without building the atlas.");
+
+			provider.NewFrame();
+			provider.Begin("window");
+			provider.Text("text");
+			provider.EndWindow();
+			ImGui.Render();
+		}
+		finally
+		{
+			provider.DestroyContext(context);
+		}
+	}
+
+	/// <summary>
 	/// Asserts that <paramref name="draw"/> draws <paramref name="text"/> with as many glyphs as a
 	/// placeholder of the same shape, which holds only when every <c>%</c> is drawn as itself rather
 	/// than expanded, collapsed or crashed on as a printf conversion.
