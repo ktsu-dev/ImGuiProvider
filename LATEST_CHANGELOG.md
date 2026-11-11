@@ -1,7 +1,7 @@
-## v2.1.1 (patch)
+## v2.1.2-pre.1 (prerelease)
 
-Changes since v2.1.0:
+Changes since v2.1.1:
 
-- Build the font atlas in BuildFontAtlas, and report whether it was built [patch] (#97) (matt-edmondson)
-- Shut a context's backends down with that context current on Dispose [patch] (#99) (matt-edmondson)
+- Bump ktsu.Sdk and 8 others (dependabot[bot])
+- Bump MSTest.Sdk from 4.5.2 to 4.5.3 (dependabot[bot])
 
