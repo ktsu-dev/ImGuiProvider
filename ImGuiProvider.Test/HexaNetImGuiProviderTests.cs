@@ -450,6 +450,80 @@ public sealed class HexaNetImGuiProviderTests
 	}
 
 	/// <summary>
+	/// Before ktsu-dev/ImGuiProvider#96 <see cref="IImGuiProvider.GetDefaultFont"/> returned the
+	/// current font: zero before the first frame, and the pushed font inside a PushFont scope, so
+	/// pushing the default font back did nothing.
+	/// </summary>
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public unsafe void GetDefaultFont_IsTheFirstFont_BeforeTheFirstFrameAndInsideAPushFontScope()
+	{
+		using HexaNetImGuiProvider provider = new();
+		nint context = provider.CreateContext();
+		ImFontConfigPtr bigConfig = ImGui.ImFontConfig();
+		try
+		{
+			provider.SetCurrentContext(context);
+			ImGuiIOPtr io = ImGui.GetIO();
+			io.DisplaySize = new Vector2(800, 600);
+			io.DeltaTime = 1f / 60f;
+			io.BackendFlags |= ImGuiBackendFlags.RendererHasTextures;
+
+			nint small = provider.AddFontDefault();
+			bigConfig.SizePixels = 30f;
+			nint big = provider.AddFontDefault((nint)bigConfig.Handle);
+
+			Assert.AreEqual(small, provider.GetDefaultFont(), "Before the first frame.");
+
+			provider.NewFrame();
+			provider.Begin("window");
+			provider.PushFont(big);
+
+			Assert.AreEqual(small, provider.GetDefaultFont(), "Inside a PushFont scope.");
+
+			provider.PushFont(provider.GetDefaultFont());
+			Assert.AreEqual(13f, ImGui.GetFontSize(), "Pushing the default font back did not restore it.");
+
+			provider.PopFont();
+			provider.PopFont();
+			provider.EndWindow();
+			ImGui.Render();
+		}
+		finally
+		{
+			bigConfig.Destroy();
+			provider.DestroyContext(context);
+		}
+	}
+
+	/// <summary>
+	/// An explicit <c>io.FontDefault</c> wins over the first font in the atlas.
+	/// </summary>
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public unsafe void GetDefaultFont_HonoursIOFontDefault()
+	{
+		using HexaNetImGuiProvider provider = new();
+		nint context = provider.CreateContext();
+		ImFontConfigPtr bigConfig = ImGui.ImFontConfig();
+		try
+		{
+			provider.SetCurrentContext(context);
+			provider.AddFontDefault();
+			bigConfig.SizePixels = 30f;
+			nint big = provider.AddFontDefault((nint)bigConfig.Handle);
+			ImGui.GetIO().FontDefault = new ImFontPtr((ImFont*)big);
+
+			Assert.AreEqual(big, provider.GetDefaultFont());
+		}
+		finally
+		{
+			bigConfig.Destroy();
+			provider.DestroyContext(context);
+		}
+	}
+
+	/// <summary>
 	/// A backend without <see cref="ImGuiBackendFlags.RendererHasTextures"/> has to build the atlas
 	/// before the first frame. Before ktsu-dev/ImGuiProvider#95 <see cref="IImGuiProvider.BuildFontAtlas"/>
 	/// returned true without building anything, and the next <see cref="IImGuiProvider.NewFrame"/>

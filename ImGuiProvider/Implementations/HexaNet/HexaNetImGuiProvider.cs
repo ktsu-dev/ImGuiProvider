@@ -608,9 +608,14 @@ public unsafe class HexaNetImGuiProvider : IImGuiProvider
 
 	// Font Management Implementation
 	/// <inheritdoc />
+	/// <remarks>
+	/// <see cref="ImGui.GetFont()"/> is the font that is current right now: null before the first
+	/// frame, and the pushed font inside a <see cref="PushFont"/> scope. The default is
+	/// <c>io.FontDefault</c>, or the first font in the atlas when that is unset.
+	/// </remarks>
 	public nint GetDefaultFont()
 	{
-		ImFontPtr font = ImGui.GetFont();
+		ImFontPtr font = ImGuiP.GetDefaultFont();
 		return (nint)font.Handle;
 	}
 
