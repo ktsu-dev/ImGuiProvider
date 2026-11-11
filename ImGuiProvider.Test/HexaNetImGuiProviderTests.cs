@@ -309,6 +309,135 @@ public sealed class HexaNetImGuiProviderTests
 	}
 
 	/// <summary>
+	/// The array overloads must pass the array's length as the item count. Before
+	/// ktsu-dev/ImGuiProvider#73 the default height of -1 was passed as the count, so the popup
+	/// listed none of the items and the user could not pick one.
+	/// </summary>
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	public void Combo_Default_ListsEveryItem()
+	{
+		(float actual, float expected) = ComboPopupContentHeight(itemCount: 3, popupMaxHeightInItems: -1);
+
+		Assert.AreEqual(expected, actual);
+	}
+
+	/// <summary>
+	/// A popup height is a height, not a count: a popup shorter than its items still lists them all
+	/// and scrolls, and a taller one does not read past the array.
+	/// </summary>
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	[DataRow(10, 3)]
+	[DataRow(2, 8)]
+	public void Combo_WithPopupHeight_ListsEveryItem(int itemCount, int popupMaxHeightInItems)
+	{
+		(float actual, float expected) = ComboPopupContentHeight(itemCount, popupMaxHeightInItems);
+
+		Assert.AreEqual(expected, actual);
+	}
+
+	/// <summary>
+	/// Opens the popup of a combo of <paramref name="itemCount"/> items for two frames. Returns the
+	/// height of the content the popup laid out, and the height of <paramref name="itemCount"/> rows.
+	/// </summary>
+	private static (float Actual, float Expected) ComboPopupContentHeight(int itemCount, int popupMaxHeightInItems)
+	{
+		string[] items = [.. Enumerable.Range(0, itemCount).Select(i => $"Item {i}")];
+
+		using HexaNetImGuiProvider provider = new();
+		nint context = provider.CreateContext();
+		try
+		{
+			provider.SetCurrentContext(context);
+			ImGuiIOPtr io = ImGui.GetIO();
+			io.DisplaySize = new Vector2(800, 600);
+			io.DeltaTime = 1f / 60f;
+			io.BackendFlags |= ImGuiBackendFlags.RendererHasTextures;
+
+			float actual = 0;
+			float expected = 0;
+			for (int frame = 0; frame < 2; frame++)
+			{
+				provider.NewFrame();
+				provider.Begin("window");
+				if (frame == 0)
+				{
+					ImGuiP.OpenPopupEx(ImGuiP.ImHashStr("##ComboPopup", 0, ImGui.GetID("combo")), ImGuiPopupFlags.None);
+				}
+
+				int current = 0;
+				provider.Combo("combo", ref current, items, popupMaxHeightInItems);
+
+				// A window's content size is measured from what it laid out in the previous frame.
+				ImGuiWindowPtr popup = ImGuiP.FindWindowByName("##Combo_00");
+				Assert.IsFalse(popup.IsNull, "The combo's popup was not opened.");
+				actual = popup.ContentSize.Y;
+				ImGuiStylePtr style = ImGui.GetStyle();
+				expected = (itemCount * ImGui.GetFontSize()) + ((itemCount - 1) * style.ItemSpacing.Y);
+
+				provider.EndWindow();
+				provider.EndFrame();
+			}
+
+			return (actual, expected);
+		}
+		finally
+		{
+			provider.DestroyContext(context);
+		}
+	}
+
+	/// <summary>
+	/// The default height shows up to seven items, as native ImGui does for the item count it is given.
+	/// </summary>
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	[DataRow(3, 3)]
+	[DataRow(10, 7)]
+	public void ListBox_DefaultHeight_FitsTheItems(int itemCount, int expectedRows)
+	{
+		(float actual, float expected) = ListBoxHeight(itemCount, heightInItems: -1, expectedRows);
+
+		Assert.AreEqual(expected, actual);
+	}
+
+	/// <summary>
+	/// An explicit height is a height, not a count: a list taller than its items keeps its height and
+	/// does not read past the array, and a shorter one is a scrolling view of every item.
+	/// </summary>
+	[TestMethod]
+	[Timeout(30000, CooperativeCancellation = true)]
+	[DataRow(2, 8)]
+	[DataRow(10, 3)]
+	public void ListBox_WithHeight_UsesItAsTheHeight(int itemCount, int heightInItems)
+	{
+		(float actual, float expected) = ListBoxHeight(itemCount, heightInItems, heightInItems);
+
+		Assert.AreEqual(expected, actual);
+	}
+
+	/// <summary>
+	/// Draws a list box of <paramref name="itemCount"/> items in a real frame. Returns its frame height,
+	/// and the height native <c>ImGui::ListBox</c> gives a list of <paramref name="expectedRows"/> rows.
+	/// </summary>
+	private static (float Actual, float Expected) ListBoxHeight(int itemCount, int heightInItems, int expectedRows)
+	{
+		string[] items = [.. Enumerable.Range(0, itemCount).Select(i => $"Item {i}")];
+		float actual = 0;
+		float expected = 0;
+		RenderedVertexCount(provider =>
+		{
+			int current = 0;
+			provider.ListBox("list", ref current, items, heightInItems);
+			actual = ImGui.GetItemRectSize().Y;
+			expected = MathF.Floor((ImGui.GetTextLineHeightWithSpacing() * (expectedRows + 0.25f)) + (ImGui.GetStyle().FramePadding.Y * 2f));
+		});
+
+		return (actual, expected);
+	}
+
+	/// <summary>
 	/// Native ImGui reads glyph ranges as <c>ImWchar</c>, which the Hexa binding builds 32 bits wide.
 	/// A provider parameter of a narrower element type can only be passed on by reinterpreting the
 	/// pointer, so native code reads each pair of 16-bit entries as one code point and runs past the
