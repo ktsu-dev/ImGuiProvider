@@ -18,6 +18,7 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	[System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The provider is shared by every context and owned by whoever created it, usually the DI container")]
 	private readonly IImGuiProvider _provider = Ensure.NotNull(provider);
 	private readonly List<IImGuiBackend> _backends = [];
+	private readonly HashSet<IImGuiBackend> _initializedBackends = new(ReferenceEqualityComparer.Instance);
 	private bool _disposed;
 
 	/// <summary>
@@ -34,8 +35,11 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	/// Initialize the ImGui context
 	/// </summary>
 	/// <returns>True if initialization was successful</returns>
+	/// <exception cref="ObjectDisposedException">The context has been disposed.</exception>
 	public bool Initialize()
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
 		if (Context != nint.Zero)
 		{
 			return true; // Already initialized
@@ -55,8 +59,11 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	/// Add a backend to this context
 	/// </summary>
 	/// <param name="backend">Backend to add</param>
+	/// <exception cref="ObjectDisposedException">The context has been disposed.</exception>
 	public void AddBackend(IImGuiBackend backend)
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
 		Ensure.NotNull(backend);
 
 		_backends.Add(backend);
@@ -68,14 +75,32 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	}
 
 	/// <summary>
-	/// Remove a backend from this context
+	/// Remove a backend from this context, shutting it down first if this context initialized it
 	/// </summary>
+	/// <remarks>
+	/// A backend that <see cref="InitializeBackends"/> initialized leaves state on the native
+	/// context, which Dear ImGui asserts is gone when the context is destroyed. Removing such a
+	/// backend therefore calls <see cref="IImGuiBackend.Shutdown"/> on it, with this context
+	/// current, so a later <see cref="Dispose()"/> or a replacement backend's initialization
+	/// does not fail. The backend is not disposed: its owner, usually the DI container, disposes it.
+	/// </remarks>
 	/// <param name="backend">Backend to remove</param>
 	public void RemoveBackend(IImGuiBackend backend)
 	{
-		if (backend != null)
+		if (backend == null || !_backends.Remove(backend))
 		{
-			_backends.Remove(backend);
+			return;
+		}
+
+		if (_initializedBackends.Remove(backend))
+		{
+			if (Context != nint.Zero)
+			{
+				_provider.SetCurrentContext(Context);
+				backend.SetCurrentContext(Context);
+			}
+
+			backend.Shutdown();
 		}
 	}
 
@@ -83,8 +108,11 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	/// Initialize all backends
 	/// </summary>
 	/// <returns>True if all backends initialized successfully</returns>
+	/// <exception cref="ObjectDisposedException">The context has been disposed.</exception>
 	public bool InitializeBackends()
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
 		foreach (IImGuiBackend backend in _backends)
 		{
 			if (Context != nint.Zero)
@@ -96,6 +124,8 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 			{
 				return false;
 			}
+
+			_initializedBackends.Add(backend);
 		}
 		return true;
 	}
@@ -103,8 +133,11 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	/// <summary>
 	/// Begin a new ImGui frame
 	/// </summary>
+	/// <exception cref="ObjectDisposedException">The context has been disposed.</exception>
 	public void BeginFrame()
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
 		if (Context == nint.Zero)
 		{
 			throw new InvalidOperationException("Context not initialized");
@@ -125,8 +158,11 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 	/// <summary>
 	/// End the current ImGui frame and render
 	/// </summary>
+	/// <exception cref="ObjectDisposedException">The context has been disposed.</exception>
 	public void EndFrame()
 	{
+		ObjectDisposedException.ThrowIf(_disposed, this);
+
 		if (Context == nint.Zero)
 		{
 			throw new InvalidOperationException("Context not initialized");
@@ -196,6 +232,7 @@ public class ImGuiContext(IImGuiProvider provider) : IDisposable
 			backend.Shutdown();
 		}
 		_backends.Clear();
+		_initializedBackends.Clear();
 
 		if (destroyed == nint.Zero)
 		{

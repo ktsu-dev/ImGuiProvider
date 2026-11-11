@@ -367,6 +367,48 @@ public class ImGuiContextTests
 	}
 
 	[TestMethod]
+	public void Initialize_AfterDisposeThrowsAndCreatesNoSecondContext()
+	{
+		_mockProvider.Setup(p => p.CreateContext()).Returns(0x1234);
+
+		ImGuiContext context = new(_mockProvider.Object);
+		context.Initialize();
+		context.Dispose();
+
+		Assert.ThrowsExactly<ObjectDisposedException>(() => context.Initialize());
+		_mockProvider.Verify(p => p.CreateContext(), Times.Once);
+		Assert.IsFalse(context.IsInitialized);
+	}
+
+	[TestMethod]
+	public void Initialize_AfterDisposeOfAnUninitializedContextThrows()
+	{
+		ImGuiContext context = new(_mockProvider.Object);
+		context.Dispose();
+
+		Assert.ThrowsExactly<ObjectDisposedException>(() => context.Initialize());
+		_mockProvider.Verify(p => p.CreateContext(), Times.Never);
+	}
+
+	[TestMethod]
+	public void LifecycleMethods_AfterDisposeThrowObjectDisposedException()
+	{
+		_mockProvider.Setup(p => p.CreateContext()).Returns(0x1234);
+		Mock<IImGuiBackend> backend = new();
+
+		ImGuiContext context = new(_mockProvider.Object);
+		context.Initialize();
+		context.Dispose();
+
+		Assert.ThrowsExactly<ObjectDisposedException>(() => context.AddBackend(backend.Object));
+		Assert.ThrowsExactly<ObjectDisposedException>(() => context.InitializeBackends());
+		Assert.ThrowsExactly<ObjectDisposedException>(context.BeginFrame);
+		Assert.ThrowsExactly<ObjectDisposedException>(context.EndFrame);
+		backend.Verify(b => b.SetCurrentContext(It.IsAny<nint>()), Times.Never);
+		backend.Verify(b => b.Initialize(), Times.Never);
+	}
+
+	[TestMethod]
 	public void RemoveBackend_RemovesFromList()
 	{
 		nint fakeContext = 0x1234;
@@ -381,6 +423,77 @@ public class ImGuiContextTests
 		context.InitializeBackends();
 
 		mockBackend.Verify(b => b.Initialize(), Times.Never);
+	}
+
+	[TestMethod]
+	public void RemoveBackend_ShutsDownAnInitializedBackendOnceWithTheContextCurrent()
+	{
+		nint fakeContext = 0x1234;
+		_mockProvider.Setup(p => p.CreateContext()).Returns(fakeContext);
+		Mock<IImGuiBackend> mockBackend = new();
+		mockBackend.Setup(b => b.Initialize()).Returns(true);
+
+		ImGuiContext context = new(_mockProvider.Object);
+		context.Initialize();
+		context.AddBackend(mockBackend.Object);
+		Assert.IsTrue(context.InitializeBackends());
+
+		_mockProvider.Invocations.Clear();
+		context.RemoveBackend(mockBackend.Object);
+
+		mockBackend.Verify(b => b.Shutdown(), Times.Once);
+		_mockProvider.Verify(p => p.SetCurrentContext(fakeContext), Times.Once);
+		mockBackend.Verify(b => b.Dispose(), Times.Never);
+
+		context.Dispose();
+
+		mockBackend.Verify(b => b.Shutdown(), Times.Once);
+		mockBackend.Verify(b => b.Dispose(), Times.Never);
+	}
+
+	[TestMethod]
+	public void RemoveBackend_DoesNotShutDownABackendThatNeverInitialized()
+	{
+		nint fakeContext = 0x1234;
+		_mockProvider.Setup(p => p.CreateContext()).Returns(fakeContext);
+		Mock<IImGuiBackend> mockBackend = new();
+
+		using ImGuiContext context = new(_mockProvider.Object);
+		context.Initialize();
+		context.AddBackend(mockBackend.Object);
+		context.RemoveBackend(mockBackend.Object);
+
+		mockBackend.Verify(b => b.Shutdown(), Times.Never);
+	}
+
+	[TestMethod]
+	public void RemoveBackend_DoesNotShutDownABackendWhoseInitializeFailed()
+	{
+		Mock<IImGuiBackend> mockBackend = new();
+		mockBackend.Setup(b => b.Initialize()).Returns(false);
+
+		using ImGuiContext context = new(_mockProvider.Object);
+		context.AddBackend(mockBackend.Object);
+		Assert.IsFalse(context.InitializeBackends());
+		context.RemoveBackend(mockBackend.Object);
+
+		mockBackend.Verify(b => b.Shutdown(), Times.Never);
+	}
+
+	[TestMethod]
+	public void RemoveBackend_OfABackendNotInTheContextDoesNothing()
+	{
+		Mock<IImGuiBackend> added = new();
+		added.Setup(b => b.Initialize()).Returns(true);
+		Mock<IImGuiBackend> stranger = new();
+
+		using ImGuiContext context = new(_mockProvider.Object);
+		context.AddBackend(added.Object);
+		context.InitializeBackends();
+		context.RemoveBackend(stranger.Object);
+
+		stranger.Verify(b => b.Shutdown(), Times.Never);
+		added.Verify(b => b.Shutdown(), Times.Never);
 	}
 
 	[TestMethod]
